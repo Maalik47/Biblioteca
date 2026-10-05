@@ -1,0 +1,50 @@
+%% Flujo de autenticacion JWT: Login (POST /api/auth/login) y uso del token
+%% Renderizable en GitHub, VS Code o mermaid.live
+
+sequenceDiagram
+    autonumber
+    actor U as Usuario
+    participant F as Frontend (fetch)
+    participant C as AuthController
+    participant S as UsuarioService/Repo
+    participant J as JwtUtil (jjwt)
+    participant B as BD (H2)
+
+    U->>F: Enviar usuario y contrasena
+    F->>F: Validar campos (required) y spinner
+    F->>C: POST /api/auth/login {username, password}
+    C->>S: findByUsername(username)
+    S->>B: SELECT * FROM usuarios WHERE username=?
+    B-->>S: Registro o vacio
+    alt usuario no existe
+        C-->>F: 400 "Credenciales invalidas"
+        F->>F: Mostrar alerta de error
+    else usuario existe
+        C->>C: BCrypt matches(password, hash)
+        alt contrasena incorrecta
+            C-->>F: 400 "Credenciales invalidas"
+            F->>F: Mostrar alerta de error
+        else usuario inactivo
+            C-->>F: 400 "El usuario esta inactivo"
+        else credenciales correctas
+            C->>J: generateToken(usuario)
+            J-->>C: JWT (sub=username, rol, nombre, exp=24h, firma HMAC)
+            C-->>F: 200 {token, id, username, nombre, rol}
+            F->>F: localStorage.setItem("token", token)
+            F->>F: Redirigir a panel.html
+        end
+    end
+
+    Note over F,B: Peticiones autenticadas posteriores (GET /api/usuarios, etc.)
+    F->>C: GET /api/usuarios  Header: Authorization: Bearer <token>
+    C->>J: JwtFilter intercepta la peticion
+    J->>J: Verificar firma y expiracion
+    J->>B: findByUsername(subject)
+    B-->>J: Usuario
+    J-->>C: SecurityContext = Authentication(ROLE_ADMIN)
+    C-->>F: 200 con datos
+    F->>F: Renderizar tabla
+
+    Note over F,B: Si el token expira o es invalido
+    C-->>F: 401 {success:false, message:"No autorizado"}
+    F->>F: cerrarSesion() + limpiar localStorage + volver a index.html

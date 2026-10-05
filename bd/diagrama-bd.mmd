@@ -1,0 +1,41 @@
+%% Diagrama Entidad-Relacion de la base de datos "Gestion de Biblioteca"
+%% Renderizable en: GitHub, VS Code (Markdown Preview Mermaid), mermaid.live
+%% Equivalente al DDL de bd/schema.sql
+
+erDiagram
+    USUARIOS ||--o{ PRESTAMOS : "genera"
+    LIBROS   ||--o{ PRESTAMOS : "se presta en"
+
+    USUARIOS {
+        BIGINT       id PK "autoincremental"
+        VARCHAR(50)  username UK "unico, obligatorio"
+        VARCHAR(100) password "hash BCrypt, obligatorio"
+        VARCHAR(100) nombre "obligatorio"
+        VARCHAR(100) apellido "opcional"
+        VARCHAR(120) email "obligatorio"
+        VARCHAR(20)  rol "ADMIN | USUARIO"
+        BOOLEAN      activo "true = habilitado"
+        TIMESTAMP    fecha_registro "fecha de alta"
+    }
+
+    LIBROS {
+        BIGINT       id PK "autoincremental"
+        VARCHAR(200) titulo "obligatorio"
+        VARCHAR(150) autor "obligatorio"
+        VARCHAR(30)  isbn UK "unico, opcional"
+        VARCHAR(80)  categoria "opcional"
+        INTEGER      anio_publicacion "opcional"
+        INTEGER      cantidad "total de ejemplares"
+        INTEGER      disponibles "ejemplares libres"
+        TIMESTAMP    fecha_registro "fecha de alta"
+    }
+
+    PRESTAMOS {
+        BIGINT   id PK "autoincremental"
+        BIGINT   usuario_id FK "-> usuarios.id"
+        BIGINT   libro_id FK "-> libros.id"
+        DATE     fecha_prestamo "obligatorio"
+        DATE     fecha_limite "obligatorio"
+        DATE     fecha_devolucion "NULL si no se devolvio"
+        VARCHAR(20) estado "PENDIENTE | DEVUELTO"
+    }

@@ -1,0 +1,25 @@
+# Dependencias y compilados
+target/
+*.class
+*.jar
+!.mvn/wrapper/maven-wrapper.jar
+
+# Base de datos local (H2) - no se sube
+backend/data/
+
+# Logs
+*.log
+backend.log
+frontend.log
+
+# Herramientas de desarrollo
+.playwright-mcp/
+.vscode/
+.idea/
+
+# Sistema operativo
+.DS_Store
+Thumbs.db
+
+# Entorno / secretos
+.env
