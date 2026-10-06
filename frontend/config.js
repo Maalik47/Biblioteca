@@ -12,4 +12,4 @@
    en window.__API_URL__.
    ========================================================================== */
 
-window.__API_URL__ = 'http://localhost:8080/api';
+window.__API_URL__ = 'https://biblioteca-0i0a.onrender.com/api';
