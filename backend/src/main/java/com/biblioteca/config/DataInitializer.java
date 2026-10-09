@@ -36,10 +36,10 @@ public class DataInitializer implements CommandLineRunner {
 
     @Override
     public void run(String... args) {
-        // El usuario administrador NO tiene credenciales por defecto.
-        // Deben inyectarse con las variables de entorno APP_ADMIN_USERNAME y
-        // APP_ADMIN_PASSWORD. Si no se definen, no se crea ningun usuario y el
-        // registro debera realizarse por otra via (API o consola).
+        // El usuario administrador se crea una sola vez (base vacia) con los
+        // valores de app.admin.username / app.admin.password. En local ambas
+        // propiedades tienen por defecto admin/admin123; en produccion se
+        // sobrescriben con APP_ADMIN_USERNAME y APP_ADMIN_PASSWORD.
         if (usuarioRepository.count() == 0) {
             if (adminUsername.isBlank() || adminPassword.isBlank()) {
                 log.warn("No se creo el usuario administrador: faltan APP_ADMIN_USERNAME y/o "
@@ -53,7 +53,7 @@ public class DataInitializer implements CommandLineRunner {
                 admin.setRol("ADMIN");
                 admin.setActivo(true);
                 usuarioRepository.save(admin);
-                log.info("Usuario administrador creado con el usuario indicado en APP_ADMIN_USERNAME.");
+                log.info("Usuario administrador '{}' creado.", adminUsername);
             }
         }
 

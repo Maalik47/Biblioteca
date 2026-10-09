@@ -30,7 +30,6 @@ if (Test-PuertoOcupado $puertoApi) {
     Write-Host "          Proceso: $nombre (PID $proc)" -ForegroundColor Yellow
     Write-Host '          Si es Apache (httpd), detengalo como Administrador:' -ForegroundColor Yellow
     Write-Host '              Stop-Service PEMHTTPD-x64' -ForegroundColor Yellow
-    Write-Host '          o use otro puerto con:  -Api 8081' -ForegroundColor Yellow
     exit 1
 }
 
@@ -97,9 +96,8 @@ Write-Host '   Frontend : http://localhost:5500/index.html' -ForegroundColor Whi
 Write-Host '   API      : http://localhost:8080/api' -ForegroundColor White
 Write-Host '   H2 Console: http://localhost:8080/h2-console' -ForegroundColor White
 Write-Host ''
-Write-Host '   Credenciales de prueba:' -ForegroundColor White
+Write-Host '   Credenciales locales (solo la primera vez):' -ForegroundColor White
 Write-Host '     admin / admin123      (rol ADMIN)' -ForegroundColor Gray
-Write-Host '     jperez / 123456       (rol USUARIO)' -ForegroundColor Gray
-Write-Host '     mgomez / 123456       (rol USUARIO)' -ForegroundColor Gray
+Write-Host '   (En la nube se configuran con APP_ADMIN_USERNAME/APP_ADMIN_PASSWORD)' -ForegroundColor DarkGray
 Write-Host '  ------------------------------------------------------------' -ForegroundColor DarkCyan
 Write-Host ''

@@ -6,8 +6,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const usuario = getUsuario();
     if (usuario) {
-        document.getElementById('usuario-nombre').textContent = usuario.nombre || usuario.username;
-        document.getElementById('usuario-rol').textContent = usuario.rol || '';
+        document.getElementById('sesion-nombre').textContent = usuario.nombre || usuario.username;
+        document.getElementById('sesion-rol').textContent = usuario.rol || '';
         const inicial = (usuario.nombre || usuario.username || '?').trim().charAt(0).toUpperCase();
         document.getElementById('usuario-inicial').textContent = inicial || '?';
     }

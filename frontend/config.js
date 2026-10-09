@@ -1,15 +1,17 @@
 /* ==========================================================================
    Configuracion del frontend
    --------------------------------------------------------------------------
-   Define la URL de la API del backend.
+   Selecciona la URL de la API automaticamente:
 
-   - Desarrollo local:  http://localhost:8080/api
-   - Produccion:        cambia esta linea por la URL publica del backend,
-                        por ejemplo  https://gestion-biblioteca.up.railway.app/api
-                        (despues vuelve a subir el frontend al hosting).
+   - Abriendo desde localhost (o archivo local) -> backend local en 8080
+   - Publicado en un hosting -> backend desplegado en Render
 
-   Este archivo se carga ANTES que api.js, por eso el valor queda disponible
-   en window.__API_URL__.
+   Para usar otro backend publicado, cambia la URL de PRODUCCION de abajo.
    ========================================================================== */
 
-window.__API_URL__ = 'https://biblioteca-0i0a.onrender.com/api';
+(function () {
+    const esLocal = ['localhost', '127.0.0.1', ''].includes(location.hostname);
+    const API_LOCAL = 'http://localhost:8080/api';
+    const API_PRODUCCION = 'https://biblioteca-0i0a.onrender.com/api';
+    window.__API_URL__ = esLocal ? API_LOCAL : API_PRODUCCION;
+})();
