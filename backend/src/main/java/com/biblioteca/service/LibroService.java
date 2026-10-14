@@ -41,7 +41,7 @@ public class LibroService {
 
     public PaginaResponse<LibroDto> buscar(String q, String categoria, String estado,
                                            boolean soloDisponibles, int pagina, int tamano) {
-        var page = libroRepository.buscar(normalizar(q), normalizar(categoria), normalizar(estado),
+        var page = libroRepository.buscar(texto(q), texto(categoria), texto(estado),
                 soloDisponibles,
                 PageRequest.of(Math.max(0, pagina), Math.max(1, Math.min(tamano, 50)),
                         Sort.by("titulo")));
@@ -162,5 +162,10 @@ public class LibroService {
 
     private String normalizar(String valor) {
         return (valor == null || valor.isBlank()) ? null : valor.trim();
+    }
+
+    private String texto(String valor) {
+        String v = normalizar(valor);
+        return v == null ? "" : v;
     }
 }

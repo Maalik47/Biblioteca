@@ -33,16 +33,16 @@ public interface PrestamoRepository extends JpaRepository<Prestamo, Long> {
             SELECT p FROM Prestamo p
             JOIN FETCH p.usuario u
             JOIN FETCH p.libro l
-            WHERE (CAST(:q AS string) IS NULL OR LOWER(l.titulo) LIKE LOWER(CONCAT('%', :q, '%'))
+            WHERE (:q = '' OR LOWER(l.titulo) LIKE LOWER(CONCAT('%', :q, '%'))
                    OR LOWER(u.nombre) LIKE LOWER(CONCAT('%', :q, '%'))
                    OR LOWER(COALESCE(u.apellido, '')) LIKE LOWER(CONCAT('%', :q, '%')))
-              AND (CAST(:estado AS string) IS NULL OR p.estado = :estado)
-              AND (CAST(:usuarioId AS long) IS NULL OR u.id = :usuarioId)
+              AND (:estado = '' OR p.estado = :estado)
+              AND (:usuarioId = 0 OR u.id = :usuarioId)
             ORDER BY p.id DESC
             """)
     Page<Prestamo> buscar(@Param("q") String q,
                           @Param("estado") String estado,
-                          @Param("usuarioId") Long usuarioId,
+                          @Param("usuarioId") long usuarioId,
                           Pageable pageable);
 
     @Query("SELECT p FROM Prestamo p JOIN FETCH p.usuario JOIN FETCH p.libro ORDER BY p.id DESC")

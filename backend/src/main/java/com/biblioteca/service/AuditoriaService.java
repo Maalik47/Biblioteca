@@ -27,7 +27,7 @@ public class AuditoriaService {
     }
 
     public Page<Auditoria> buscar(String q, String accion, int pagina, int tamano) {
-        return auditoriaRepository.buscar(normalizar(q), normalizar(accion),
+        return auditoriaRepository.buscar(texto(q), texto(accion),
                 PageRequest.of(Math.max(0, pagina), Math.max(1, Math.min(tamano, 100)),
                         Sort.by(Sort.Direction.DESC, "fecha")));
     }
@@ -46,5 +46,10 @@ public class AuditoriaService {
 
     private String normalizar(String valor) {
         return (valor == null || valor.isBlank()) ? null : valor.trim();
+    }
+
+    private String texto(String valor) {
+        String v = normalizar(valor);
+        return v == null ? "" : v;
     }
 }

@@ -42,8 +42,8 @@ public class UsuarioService {
 
     public PaginaResponse<UsuarioDto> buscar(String q, String rol, String tipoLector,
                                              Boolean soloAcceso, int pagina, int tamano) {
-        var page = usuarioRepository.buscar(normalizar(q), normalizar(rol), normalizar(tipoLector),
-                soloAcceso,
+        var page = usuarioRepository.buscar(texto(q), texto(rol), texto(tipoLector),
+                Boolean.TRUE.equals(soloAcceso),
                 PageRequest.of(Math.max(0, pagina), Math.max(1, Math.min(tamano, 50)),
                         Sort.by("nombre")));
         return PaginaResponse.desde(page, UsuarioDto::from);
@@ -295,5 +295,10 @@ public class UsuarioService {
 
     private String normalizar(String valor) {
         return (valor == null || valor.isBlank()) ? null : valor.trim();
+    }
+
+    private String texto(String valor) {
+        String v = normalizar(valor);
+        return v == null ? "" : v;
     }
 }

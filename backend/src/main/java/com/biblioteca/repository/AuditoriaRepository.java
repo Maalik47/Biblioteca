@@ -15,10 +15,10 @@ public interface AuditoriaRepository extends JpaRepository<Auditoria, Long> {
 
     @Query("""
             SELECT a FROM Auditoria a
-            WHERE (CAST(:q AS string) IS NULL OR LOWER(a.usuario) LIKE LOWER(CONCAT('%', :q, '%'))
+            WHERE (:q = '' OR LOWER(a.usuario) LIKE LOWER(CONCAT('%', :q, '%'))
                    OR LOWER(a.accion) LIKE LOWER(CONCAT('%', :q, '%'))
                    OR LOWER(COALESCE(a.entidad, '')) LIKE LOWER(CONCAT('%', :q, '%')))
-              AND (CAST(:accion AS string) IS NULL OR a.accion = :accion)
+              AND (:accion = '' OR a.accion = :accion)
             ORDER BY a.fecha DESC
             """)
     Page<Auditoria> buscar(@Param("q") String q, @Param("accion") String accion, Pageable pageable);
