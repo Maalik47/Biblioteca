@@ -11,7 +11,7 @@
 
 (function () {
     const esLocal = ['localhost', '127.0.0.1', ''].includes(location.hostname);
-    const API_LOCAL = 'http://localhost:8000/api';
+    const API_LOCAL = 'http://localhost:8080/api';
     const API_PRODUCCION = 'https://biblioteca-0i0a.onrender.com/api';
     window.__API_URL__ = esLocal ? API_LOCAL : API_PRODUCCION;
 })();

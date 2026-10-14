@@ -19,11 +19,11 @@ public interface LibroRepository extends JpaRepository<Libro, Long> {
 
     @Query("""
             SELECT l FROM Libro l
-            WHERE (:q IS NULL OR LOWER(l.titulo) LIKE LOWER(CONCAT('%', :q, '%'))
+            WHERE (CAST(:q AS string) IS NULL OR LOWER(l.titulo) LIKE LOWER(CONCAT('%', :q, '%'))
                    OR LOWER(l.autor)   LIKE LOWER(CONCAT('%', :q, '%'))
                    OR LOWER(COALESCE(l.isbn, '')) LIKE LOWER(CONCAT('%', :q, '%')))
-              AND (:categoria IS NULL OR l.categoria = :categoria)
-              AND (:estado IS NULL OR l.estado = :estado)
+              AND (CAST(:categoria AS string) IS NULL OR l.categoria = :categoria)
+              AND (CAST(:estado AS string) IS NULL OR l.estado = :estado)
               AND (:soloDisponibles = FALSE OR l.disponibles > 0)
             """)
     Page<Libro> buscar(@Param("q") String q,

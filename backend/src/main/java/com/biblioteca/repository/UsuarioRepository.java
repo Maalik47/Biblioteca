@@ -27,14 +27,14 @@ public interface UsuarioRepository extends JpaRepository<Usuario, Long> {
 
     @Query("""
             SELECT u FROM Usuario u
-            WHERE (:q IS NULL OR LOWER(u.nombre) LIKE LOWER(CONCAT('%', :q, '%'))
+            WHERE (CAST(:q AS string) IS NULL OR LOWER(u.nombre) LIKE LOWER(CONCAT('%', :q, '%'))
                    OR LOWER(COALESCE(u.apellido, '')) LIKE LOWER(CONCAT('%', :q, '%'))
                    OR LOWER(u.username) LIKE LOWER(CONCAT('%', :q, '%'))
                    OR LOWER(u.email) LIKE LOWER(CONCAT('%', :q, '%'))
                    OR LOWER(COALESCE(u.codigoLector, '')) LIKE LOWER(CONCAT('%', :q, '%')))
-              AND (:rol IS NULL OR u.rol = :rol)
-              AND (:tipoLector IS NULL OR u.tipoLector = :tipoLector)
-              AND (:soloAcceso IS NULL OR u.puedeAcceder = :soloAcceso)
+              AND (CAST(:rol AS string) IS NULL OR u.rol = :rol)
+              AND (CAST(:tipoLector AS string) IS NULL OR u.tipoLector = :tipoLector)
+              AND (CAST(:soloAcceso AS boolean) IS NULL OR u.puedeAcceder = :soloAcceso)
             """)
     Page<Usuario> buscar(@Param("q") String q,
                          @Param("rol") String rol,
