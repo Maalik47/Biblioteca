@@ -37,6 +37,24 @@ public class Libro {
     @Column(nullable = false)
     private Integer disponibles = 1;
 
+    // ------------------------------------------------------------------
+    // Campos bibliograficos adicionales (aditivos).
+    // ------------------------------------------------------------------
+
+    private String editorial;
+
+    @Column(length = 1200)
+    private String descripcion;
+
+    /** Ubicacion fisica general (p. ej. "Estante A-3"). */
+    private String ubicacion;
+
+    @Column(name = "portada_url", length = 500)
+    private String portadaUrl;
+
+    /** Estado del libro: ACTIVO | INACTIVO (nullable por compatibilidad de migracion). */
+    private String estado = "ACTIVO";
+
     @Column(name = "fecha_registro")
     private LocalDateTime fechaRegistro = LocalDateTime.now();
 
@@ -102,6 +120,46 @@ public class Libro {
 
     public void setDisponibles(Integer disponibles) {
         this.disponibles = disponibles;
+    }
+
+    public String getEditorial() {
+        return editorial;
+    }
+
+    public void setEditorial(String editorial) {
+        this.editorial = editorial;
+    }
+
+    public String getDescripcion() {
+        return descripcion;
+    }
+
+    public void setDescripcion(String descripcion) {
+        this.descripcion = descripcion;
+    }
+
+    public String getUbicacion() {
+        return ubicacion;
+    }
+
+    public void setUbicacion(String ubicacion) {
+        this.ubicacion = ubicacion;
+    }
+
+    public String getPortadaUrl() {
+        return portadaUrl;
+    }
+
+    public void setPortadaUrl(String portadaUrl) {
+        this.portadaUrl = portadaUrl;
+    }
+
+    public String getEstado() {
+        return estado;
+    }
+
+    public void setEstado(String estado) {
+        this.estado = estado;
     }
 
     public LocalDateTime getFechaRegistro() {

@@ -19,7 +19,7 @@
             </div>
             <div>
                 Biblioteca
-                <small>Panel de administración</small>
+                <small>Sistema de gestión</small>
             </div>
         </div>
 
@@ -43,172 +43,694 @@
     </header>
 
     <div class="distribucion">
-        <nav class="menu-lateral" aria-label="Secciones">
+        <nav class="menu-lateral" id="menu-lateral" aria-label="Secciones">
             <p class="menu-titulo">Menú</p>
-            <button class="item-menu activo" data-seccion="usuarios" aria-current="true">
-                <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
-                    <circle cx="9" cy="7" r="4"/>
-                    <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
-                    <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
-                </svg>
-                <span>Usuarios</span>
+            <button class="item-menu" data-seccion="dashboard" data-roles="ADMIN,BIBLIOTECARIO">
+                <span data-icono="dashboard" aria-hidden="true"></span><span>Panel</span>
             </button>
-            <button class="item-menu" data-seccion="libros">
-                <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/>
-                    <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/>
-                </svg>
-                <span>Libros</span>
+            <button class="item-menu" data-seccion="catalogo" data-roles="ADMIN,BIBLIOTECARIO,USUARIO">
+                <span data-icono="libro" aria-hidden="true"></span><span>Catálogo</span>
             </button>
-            <button class="item-menu" data-seccion="prestamos">
-                <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <polyline points="17 1 21 5 17 9"/>
-                    <path d="M3 11V9a4 4 0 0 1 4-4h14"/>
-                    <polyline points="7 23 3 19 7 15"/>
-                    <path d="M21 13v2a4 4 0 0 1-4 4H3"/>
-                </svg>
-                <span>Préstamos</span>
+            <button class="item-menu" data-seccion="lectores" data-roles="ADMIN,BIBLIOTECARIO">
+                <span data-icono="lector" aria-hidden="true"></span><span>Lectores</span>
+            </button>
+            <button class="item-menu" data-seccion="prestamos" data-roles="ADMIN,BIBLIOTECARIO">
+                <span data-icono="prestamo" aria-hidden="true"></span><span>Préstamos</span>
+            </button>
+            <button class="item-menu" data-seccion="reservas" data-roles="ADMIN,BIBLIOTECARIO">
+                <span data-icono="reserva" aria-hidden="true"></span><span>Reservas</span>
+            </button>
+            <button class="item-menu" data-seccion="reportes" data-roles="ADMIN,BIBLIOTECARIO">
+                <span data-icono="reporte" aria-hidden="true"></span><span>Reportes</span>
+            </button>
+            <button class="item-menu" data-seccion="auditoria" data-roles="ADMIN">
+                <span data-icono="auditoria" aria-hidden="true"></span><span>Auditoría</span>
+            </button>
+            <button class="item-menu" data-seccion="usuarios" data-roles="ADMIN">
+                <span data-icono="usuario" aria-hidden="true"></span><span>Usuarios</span>
+            </button>
+            <button class="item-menu" data-seccion="misprestamos" data-roles="USUARIO">
+                <span data-icono="prestamo" aria-hidden="true"></span><span>Mis préstamos</span>
+            </button>
+            <button class="item-menu" data-seccion="misreservas" data-roles="USUARIO">
+                <span data-icono="reserva" aria-hidden="true"></span><span>Mis reservas</span>
             </button>
         </nav>
 
         <main class="contenido" id="contenido">
-            <!-- ============ USUARIOS ============ -->
-            <section id="seccion-usuarios" class="seccion activa">
+
+            <!-- ============ PANEL / DASHBOARD ============ -->
+            <section id="seccion-dashboard" class="seccion">
                 <div class="cabecera">
                     <div class="cabecera-texto">
-                        <h2>Gestión de Usuarios</h2>
-                        <p>Administra las cuentas de acceso al sistema.</p>
+                        <h2>Panel general</h2>
+                        <p>Resumen de la actividad de la biblioteca.</p>
                     </div>
-                    <button class="boton boton-primario" onclick="abrirModalUsuario()">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
-                            <line x1="12" y1="5" x2="12" y2="19"/>
-                            <line x1="5" y1="12" x2="19" y2="12"/>
-                        </svg>
-                        <span>Nuevo usuario</span>
+                    <button class="boton boton-secundario boton-mini" onclick="cargarDashboard()">
+                        <span data-icono="renovar" aria-hidden="true"></span><span>Actualizar</span>
                     </button>
                 </div>
-                <div class="contenedor-tabla">
-                    <table class="tabla">
-                        <thead>
-                            <tr>
-                                <th>ID</th><th>Usuario</th><th>Nombre</th><th>Email</th>
-                                <th>Rol</th><th>Estado</th><th>Acciones</th>
-                            </tr>
-                        </thead>
-                        <tbody id="tabla-usuarios"></tbody>
-                    </table>
-                    <div class="aviso-vacio" id="vacio-usuarios" style="display:none">
-                        <div class="vacio-icono" aria-hidden="true">
-                            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
-                                <circle cx="9" cy="7" r="4"/>
-                                <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
-                                <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
-                            </svg>
-                        </div>
-                        <h4>Aún no hay usuarios</h4>
-                        <p>Comienza creando el primer usuario del sistema.</p>
-                        <button class="boton boton-primario boton-mini" onclick="abrirModalUsuario()">
-                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
-                                <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
-                            </svg>
-                            <span>Nuevo usuario</span>
-                        </button>
+
+                <div class="rejilla-stats" id="stats-dashboard"></div>
+
+                <div class="dashboard-grid">
+                    <div class="panel-tarjeta">
+                        <h3>Libros por categoría</h3>
+                        <div class="barras" id="barras-categorias"></div>
+                    </div>
+                    <div class="panel-tarjeta">
+                        <h3>Actividad reciente</h3>
+                        <ul class="lista-actividad" id="lista-actividad"></ul>
+                    </div>
+                </div>
+
+                <div class="panel-tarjeta">
+                    <h3>Últimos préstamos</h3>
+                    <div class="contenedor-tabla">
+                        <table class="tabla">
+                            <thead>
+                                <tr><th>Lector</th><th>Libro</th><th>Préstamo</th><th>Límite</th><th>Estado</th></tr>
+                            </thead>
+                            <tbody id="tabla-ultimos-prestamos"></tbody>
+                        </table>
                     </div>
                 </div>
             </section>
 
-            <!-- ============ LIBROS ============ -->
-            <section id="seccion-libros" class="seccion">
+            <!-- ============ CATÁLOGO ============ -->
+            <section id="seccion-catalogo" class="seccion">
                 <div class="cabecera">
                     <div class="cabecera-texto">
-                        <h2>Gestión de Libros</h2>
-                        <p>Registra y controla el catálogo de la biblioteca.</p>
+                        <h2>Catálogo de libros</h2>
+                        <p>Consulta y administra los títulos y sus ejemplares.</p>
                     </div>
-                    <button class="boton boton-primario" onclick="abrirModalLibro()">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
-                            <line x1="12" y1="5" x2="12" y2="19"/>
-                            <line x1="5" y1="12" x2="19" y2="12"/>
-                        </svg>
-                        <span>Nuevo libro</span>
+                    <button class="boton boton-primario solo-staff" onclick="abrirModalLibro()">
+                        <span data-icono="plus" aria-hidden="true"></span><span>Nuevo libro</span>
                     </button>
                 </div>
+
+                <div class="toolbar-tabla">
+                    <div class="buscador">
+                        <span data-icono="buscar" aria-hidden="true"></span>
+                        <input type="search" id="buscar-libros" placeholder="Buscar por título, autor o ISBN..." aria-label="Buscar libros">
+                    </div>
+                    <select id="filtro-categoria" aria-label="Filtrar por categoría">
+                        <option value="">Todas las categorías</option>
+                    </select>
+                    <select id="filtro-estado-libro" aria-label="Filtrar por estado">
+                        <option value="">Todos los estados</option>
+                        <option value="ACTIVO">Activo</option>
+                        <option value="INACTIVO">Inactivo</option>
+                    </select>
+                    <label class="check-linea"><input type="checkbox" id="filtro-disponibles"> Solo disponibles</label>
+                </div>
+
                 <div class="contenedor-tabla">
                     <table class="tabla">
                         <thead>
                             <tr>
-                                <th>ID</th><th>Título</th><th>Autor</th><th>ISBN</th>
-                                <th>Categoría</th><th>Año</th><th>Cantidad</th><th>Disponibles</th><th>Acciones</th>
+                                <th>Título</th><th>Autor</th><th>Categoría</th><th>Año</th>
+                                <th>Editorial</th><th>Ejemplares disponibles</th><th>Estado</th><th>Acciones</th>
                             </tr>
                         </thead>
                         <tbody id="tabla-libros"></tbody>
                     </table>
                     <div class="aviso-vacio" id="vacio-libros" style="display:none">
-                        <div class="vacio-icono" aria-hidden="true">
-                            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/>
-                                <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/>
-                            </svg>
-                        </div>
-                        <h4>Aún no hay libros</h4>
-                        <p>El catálogo está vacío. Agrega el primer libro disponible.</p>
-                        <button class="boton boton-primario boton-mini" onclick="abrirModalLibro()">
-                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
-                                <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
-                            </svg>
-                            <span>Nuevo libro</span>
-                        </button>
+                        <div class="vacio-icono" aria-hidden="true"><span data-icono="libro"></span></div>
+                        <h4>No hay libros que coincidan</h4>
+                        <p>Prueba con otros filtros o agrega un nuevo título.</p>
                     </div>
                 </div>
+                <div class="paginacion" id="pag-libros"></div>
+            </section>
+
+            <!-- ============ LECTORES ============ -->
+            <section id="seccion-lectores" class="seccion">
+                <div class="cabecera">
+                    <div class="cabecera-texto">
+                        <h2>Lectores</h2>
+                        <p>Registra y administra a las personas que usan la biblioteca.</p>
+                    </div>
+                    <button class="boton boton-primario" onclick="abrirModalLector()">
+                        <span data-icono="plus" aria-hidden="true"></span><span>Nuevo lector</span>
+                    </button>
+                </div>
+
+                <div class="toolbar-tabla">
+                    <div class="buscador">
+                        <span data-icono="buscar" aria-hidden="true"></span>
+                        <input type="search" id="buscar-lectores" placeholder="Buscar por nombre, email o código..." aria-label="Buscar lectores">
+                    </div>
+                    <select id="filtro-tipo-lector" aria-label="Filtrar por tipo">
+                        <option value="">Todos los tipos</option>
+                        <option value="GENERAL">General</option>
+                        <option value="ESTUDIANTE">Estudiante</option>
+                        <option value="DOCENTE">Docente</option>
+                        <option value="INVESTIGADOR">Investigador</option>
+                    </select>
+                    <label class="check-linea"><input type="checkbox" id="filtro-acceso"> Solo con acceso al sistema</label>
+                </div>
+
+                <div class="contenedor-tabla">
+                    <table class="tabla">
+                        <thead>
+                            <tr>
+                                <th>Código</th><th>Nombre</th><th>Contacto</th><th>Identificación</th>
+                                <th>Tipo</th><th>Acceso</th><th>Estado</th><th>Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tabla-lectores"></tbody>
+                    </table>
+                    <div class="aviso-vacio" id="vacio-lectores" style="display:none">
+                        <div class="vacio-icono" aria-hidden="true"><span data-icono="lector"></span></div>
+                        <h4>No hay lectores</h4>
+                        <p>Registra al primer lector de la biblioteca.</p>
+                    </div>
+                </div>
+                <div class="paginacion" id="pag-lectores"></div>
             </section>
 
             <!-- ============ PRÉSTAMOS ============ -->
             <section id="seccion-prestamos" class="seccion">
                 <div class="cabecera">
                     <div class="cabecera-texto">
-                        <h2>Gestión de Préstamos</h2>
-                        <p>Administra los préstamos y devoluciones.</p>
+                        <h2>Préstamos</h2>
+                        <p>Registra préstamos, devoluciones y renovaciones.</p>
                     </div>
                     <button class="boton boton-primario" onclick="abrirModalPrestamo()">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
-                            <line x1="12" y1="5" x2="12" y2="19"/>
-                            <line x1="5" y1="12" x2="19" y2="12"/>
-                        </svg>
-                        <span>Nuevo préstamo</span>
+                        <span data-icono="plus" aria-hidden="true"></span><span>Nuevo préstamo</span>
                     </button>
                 </div>
+
+                <div class="toolbar-tabla">
+                    <div class="buscador">
+                        <span data-icono="buscar" aria-hidden="true"></span>
+                        <input type="search" id="buscar-prestamos" placeholder="Buscar por lector o libro..." aria-label="Buscar préstamos">
+                    </div>
+                    <select id="filtro-estado-prestamo" aria-label="Filtrar por estado">
+                        <option value="">Todos los estados</option>
+                        <option value="PENDIENTE">Activos</option>
+                        <option value="DEVUELTO">Devueltos</option>
+                    </select>
+                </div>
+
                 <div class="contenedor-tabla">
                     <table class="tabla">
                         <thead>
                             <tr>
-                                <th>ID</th><th>Usuario</th><th>Libro</th><th>Préstamo</th>
-                                <th>Límite</th><th>Devolución</th><th>Estado</th><th>Acciones</th>
+                                <th>ID</th><th>Lector</th><th>Libro</th><th>Ejemplar</th><th>Préstamo</th>
+                                <th>Límite</th><th>Estado</th><th>Renov.</th><th>Acciones</th>
                             </tr>
                         </thead>
                         <tbody id="tabla-prestamos"></tbody>
                     </table>
                     <div class="aviso-vacio" id="vacio-prestamos" style="display:none">
-                        <div class="vacio-icono" aria-hidden="true">
-                            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                <polyline points="17 1 21 5 17 9"/>
-                                <path d="M3 11V9a4 4 0 0 1 4-4h14"/>
-                                <polyline points="7 23 3 19 7 15"/>
-                                <path d="M21 13v2a4 4 0 0 1-4 4H3"/>
-                            </svg>
-                        </div>
-                        <h4>Aún no hay préstamos</h4>
-                        <p>Registra el primer préstamo de un libro a un usuario.</p>
-                        <button class="boton boton-primario boton-mini" onclick="abrirModalPrestamo()">
-                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
-                                <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
-                            </svg>
-                            <span>Nuevo préstamo</span>
+                        <div class="vacio-icono" aria-hidden="true"><span data-icono="prestamo"></span></div>
+                        <h4>No hay préstamos</h4>
+                        <p>Registra el primer préstamo de un libro a un lector.</p>
+                    </div>
+                </div>
+                <div class="paginacion" id="pag-prestamos"></div>
+            </section>
+
+            <!-- ============ RESERVAS ============ -->
+            <section id="seccion-reservas" class="seccion">
+                <div class="cabecera">
+                    <div class="cabecera-texto">
+                        <h2>Reservas</h2>
+                        <p>Gestiona las reservas de libros sin ejemplares disponibles.</p>
+                    </div>
+                    <button class="boton boton-primario" onclick="abrirModalReserva()">
+                        <span data-icono="plus" aria-hidden="true"></span><span>Nueva reserva</span>
+                    </button>
+                </div>
+
+                <div class="toolbar-tabla">
+                    <select id="filtro-estado-reserva" aria-label="Filtrar por estado">
+                        <option value="">Todos los estados</option>
+                        <option value="PENDIENTE">Pendientes</option>
+                        <option value="DISPONIBLE">Disponibles</option>
+                        <option value="CUMPLIDA">Cumplidas</option>
+                        <option value="CANCELADA">Canceladas</option>
+                    </select>
+                </div>
+
+                <div class="contenedor-tabla">
+                    <table class="tabla">
+                        <thead>
+                            <tr>
+                                <th>ID</th><th>Lector</th><th>Libro</th><th>Solicitada</th>
+                                <th>Expira</th><th>Posición</th><th>Estado</th><th>Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tabla-reservas"></tbody>
+                    </table>
+                    <div class="aviso-vacio" id="vacio-reservas" style="display:none">
+                        <div class="vacio-icono" aria-hidden="true"><span data-icono="reserva"></span></div>
+                        <h4>No hay reservas</h4>
+                        <p>Cuando un libro no tenga ejemplares disponibles, podrás reservarlo aquí.</p>
+                    </div>
+                </div>
+                <div class="paginacion" id="pag-reservas"></div>
+            </section>
+
+            <!-- ============ REPORTES ============ -->
+            <section id="seccion-reportes" class="seccion">
+                <div class="cabecera">
+                    <div class="cabecera-texto">
+                        <h2>Reportes</h2>
+                        <p>Estadísticas de uso y exportación de datos.</p>
+                    </div>
+                    <div class="acciones">
+                        <button class="boton boton-secundario boton-mini" onclick="descargarArchivo('/reportes/libros.csv', 'libros.csv')">
+                            <span data-icono="descargar" aria-hidden="true"></span><span>Libros (CSV)</span>
                         </button>
+                        <button class="boton boton-secundario boton-mini" onclick="descargarArchivo('/reportes/prestamos.csv', 'prestamos.csv')">
+                            <span data-icono="descargar" aria-hidden="true"></span><span>Préstamos (CSV)</span>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="rejilla-stats" id="reportes-stats"></div>
+
+                <div class="dashboard-grid">
+                    <div class="panel-tarjeta">
+                        <h3>Libros más prestados</h3>
+                        <div class="contenedor-tabla">
+                            <table class="tabla">
+                                <thead><tr><th>#</th><th>Libro</th><th>Préstamos</th></tr></thead>
+                                <tbody id="tabla-ranking"></tbody>
+                            </table>
+                            <div class="aviso-vacio" id="vacio-ranking" style="display:none">
+                                <h4>Sin datos de préstamos</h4>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="panel-tarjeta">
+                        <h3>Libros por categoría</h3>
+                        <div class="barras" id="barras-reporte"></div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ============ AUDITORÍA ============ -->
+            <section id="seccion-auditoria" class="seccion">
+                <div class="cabecera">
+                    <div class="cabecera-texto">
+                        <h2>Auditoría</h2>
+                        <p>Historial de acciones realizadas en el sistema.</p>
+                    </div>
+                </div>
+
+                <div class="toolbar-tabla">
+                    <div class="buscador">
+                        <span data-icono="buscar" aria-hidden="true"></span>
+                        <input type="search" id="buscar-auditoria" placeholder="Buscar por usuario, detalle o entidad..." aria-label="Buscar en auditoría">
+                    </div>
+                    <select id="filtro-accion-auditoria" aria-label="Filtrar por acción">
+                        <option value="">Todas las acciones</option>
+                        <option value="CREAR">Crear</option>
+                        <option value="ACTUALIZAR">Actualizar</option>
+                        <option value="ELIMINAR">Eliminar</option>
+                        <option value="LOGIN">Inicio de sesión</option>
+                    </select>
+                </div>
+
+                <div class="contenedor-tabla">
+                    <table class="tabla">
+                        <thead>
+                            <tr><th>Fecha</th><th>Usuario</th><th>Acción</th><th>Entidad</th><th>ID</th><th>Detalle</th></tr>
+                        </thead>
+                        <tbody id="tabla-auditoria"></tbody>
+                    </table>
+                    <div class="aviso-vacio" id="vacio-auditoria" style="display:none">
+                        <div class="vacio-icono" aria-hidden="true"><span data-icono="auditoria"></span></div>
+                        <h4>Sin registros</h4>
+                    </div>
+                </div>
+                <div class="paginacion" id="pag-auditoria"></div>
+            </section>
+
+            <!-- ============ USUARIOS DEL SISTEMA ============ -->
+            <section id="seccion-usuarios" class="seccion">
+                <div class="cabecera">
+                    <div class="cabecera-texto">
+                        <h2>Usuarios del sistema</h2>
+                        <p>Cuentas con acceso al panel de gestión.</p>
+                    </div>
+                    <button class="boton boton-primario" onclick="abrirModalUsuario()">
+                        <span data-icono="plus" aria-hidden="true"></span><span>Nuevo usuario</span>
+                    </button>
+                </div>
+
+                <div class="toolbar-tabla">
+                    <div class="buscador">
+                        <span data-icono="buscar" aria-hidden="true"></span>
+                        <input type="search" id="buscar-usuarios" placeholder="Buscar por usuario, nombre o email..." aria-label="Buscar usuarios">
+                    </div>
+                    <select id="filtro-rol" aria-label="Filtrar por rol">
+                        <option value="">Todos los roles</option>
+                        <option value="ADMIN">Administrador</option>
+                        <option value="BIBLIOTECARIO">Bibliotecario</option>
+                        <option value="USUARIO">Usuario</option>
+                    </select>
+                </div>
+
+                <div class="contenedor-tabla">
+                    <table class="tabla">
+                        <thead>
+                            <tr><th>Usuario</th><th>Nombre</th><th>Email</th><th>Rol</th><th>Estado</th><th>Acciones</th></tr>
+                        </thead>
+                        <tbody id="tabla-usuarios"></tbody>
+                    </table>
+                    <div class="aviso-vacio" id="vacio-usuarios" style="display:none">
+                        <div class="vacio-icono" aria-hidden="true"><span data-icono="usuario"></span></div>
+                        <h4>No hay usuarios</h4>
+                        <p>Crea la primera cuenta de acceso al panel.</p>
+                    </div>
+                </div>
+                <div class="paginacion" id="pag-usuarios"></div>
+            </section>
+
+            <!-- ============ MIS PRÉSTAMOS ============ -->
+            <section id="seccion-misprestamos" class="seccion">
+                <div class="cabecera">
+                    <div class="cabecera-texto">
+                        <h2>Mis préstamos</h2>
+                        <p>Historial de tus préstamos y devoluciones.</p>
+                    </div>
+                </div>
+                <div class="contenedor-tabla">
+                    <table class="tabla">
+                        <thead>
+                            <tr><th>Libro</th><th>Ejemplar</th><th>Préstamo</th><th>Límite</th><th>Devolución</th><th>Estado</th></tr>
+                        </thead>
+                        <tbody id="tabla-misprestamos"></tbody>
+                    </table>
+                    <div class="aviso-vacio" id="vacio-misprestamos" style="display:none">
+                        <h4>No tienes préstamos registrados</h4>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ============ MIS RESERVAS ============ -->
+            <section id="seccion-misreservas" class="seccion">
+                <div class="cabecera">
+                    <div class="cabecera-texto">
+                        <h2>Mis reservas</h2>
+                        <p>Reservas de libros que has solicitado.</p>
+                    </div>
+                    <button class="boton boton-primario" onclick="abrirModalReserva()">
+                        <span data-icono="plus" aria-hidden="true"></span><span>Reservar libro</span>
+                    </button>
+                </div>
+                <div class="contenedor-tabla">
+                    <table class="tabla">
+                        <thead>
+                            <tr><th>Libro</th><th>Solicitada</th><th>Expira</th><th>Posición</th><th>Estado</th><th>Acciones</th></tr>
+                        </thead>
+                        <tbody id="tabla-misreservas"></tbody>
+                    </table>
+                    <div class="aviso-vacio" id="vacio-misreservas" style="display:none">
+                        <h4>No tienes reservas</h4>
                     </div>
                 </div>
             </section>
         </main>
+    </div>
+
+    <!-- ============ MODAL LIBRO ============ -->
+    <div class="modal" id="modal-libro" role="dialog" aria-modal="true" aria-labelledby="titulo-modal-libro">
+        <div class="modal-caja">
+            <div class="modal-cabecera">
+                <div class="modal-titulo">
+                    <span class="icono" aria-hidden="true"><span data-icono="libro"></span></span>
+                    <h3 id="titulo-modal-libro">Nuevo libro</h3>
+                </div>
+                <button class="cerrar-modal" type="button" aria-label="Cerrar" onclick="cerrarModal('modal-libro')">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                </button>
+            </div>
+            <form id="form-libro">
+                <div class="modal-cuerpo">
+                    <input type="hidden" id="libro-id">
+                    <div class="fila-campos">
+                        <div class="campo">
+                            <label for="libro-titulo">Título *</label>
+                            <input type="text" id="libro-titulo" required autocomplete="off">
+                        </div>
+                        <div class="campo">
+                            <label for="libro-autor">Autor *</label>
+                            <input type="text" id="libro-autor" required autocomplete="off">
+                        </div>
+                        <div class="campo">
+                            <label for="libro-isbn">ISBN</label>
+                            <input type="text" id="libro-isbn" autocomplete="off">
+                        </div>
+                        <div class="campo">
+                            <label for="libro-categoria">Categoría</label>
+                            <input type="text" id="libro-categoria" autocomplete="off" list="lista-categorias">
+                            <datalist id="lista-categorias"></datalist>
+                        </div>
+                        <div class="campo">
+                            <label for="libro-anio">Año de publicación</label>
+                            <input type="number" id="libro-anio" min="0" max="2100">
+                        </div>
+                        <div class="campo">
+                            <label for="libro-editorial">Editorial</label>
+                            <input type="text" id="libro-editorial" autocomplete="off">
+                        </div>
+                        <div class="campo">
+                            <label for="libro-ubicacion">Ubicación</label>
+                            <input type="text" id="libro-ubicacion" placeholder="Ej. Estante A-3" autocomplete="off">
+                        </div>
+                        <div class="campo">
+                            <label for="libro-cantidad">Cantidad de ejemplares *</label>
+                            <input type="number" id="libro-cantidad" min="1" value="1" required>
+                        </div>
+                        <div class="campo">
+                            <label for="libro-portada">URL de portada</label>
+                            <input type="url" id="libro-portada" placeholder="https://..." autocomplete="off">
+                        </div>
+                        <div class="campo">
+                            <label for="libro-estado">Estado</label>
+                            <select id="libro-estado">
+                                <option value="ACTIVO">Activo</option>
+                                <option value="INACTIVO">Inactivo</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="campo">
+                        <label for="libro-descripcion">Descripción</label>
+                        <textarea id="libro-descripcion" rows="3"></textarea>
+                    </div>
+                    <p class="nota">Al cambiar la cantidad, los ejemplares se ajustan automáticamente.</p>
+                </div>
+                <div class="modal-pie">
+                    <button type="button" class="boton boton-secundario" onclick="cerrarModal('modal-libro')">Cancelar</button>
+                    <button type="submit" class="boton boton-primario">Guardar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- ============ MODAL EJEMPLARES ============ -->
+    <div class="modal" id="modal-ejemplares" role="dialog" aria-modal="true" aria-labelledby="titulo-modal-ejemplares">
+        <div class="modal-caja">
+            <div class="modal-cabecera">
+                <div class="modal-titulo">
+                    <span class="icono" aria-hidden="true"><span data-icono="libro"></span></span>
+                    <h3 id="titulo-modal-ejemplares">Ejemplares</h3>
+                </div>
+                <button class="cerrar-modal" type="button" aria-label="Cerrar" onclick="cerrarModal('modal-ejemplares')">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                </button>
+            </div>
+            <div class="modal-cuerpo">
+                <div class="toolbar-tabla" style="margin-bottom:12px">
+                    <div class="campo" style="flex:1;margin:0">
+                        <label for="ejemplar-ubicacion">Ubicación del nuevo ejemplar</label>
+                        <input type="text" id="ejemplar-ubicacion" placeholder="Ej. Estante B-2">
+                    </div>
+                    <button type="button" class="boton boton-secundario" style="align-self:flex-end" onclick="agregarEjemplar()">
+                        <span data-icono="plus" aria-hidden="true"></span><span>Agregar ejemplar</span>
+                    </button>
+                </div>
+                <div class="contenedor-tabla">
+                    <table class="tabla">
+                        <thead><tr><th>Código</th><th>Ubicación</th><th>Estado</th><th>Acciones</th></tr></thead>
+                        <tbody id="tabla-ejemplares"></tbody>
+                    </table>
+                    <div class="aviso-vacio" id="vacio-ejemplares" style="display:none">
+                        <h4>Sin ejemplares</h4>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-pie">
+                <button type="button" class="boton boton-secundario" onclick="cerrarModal('modal-ejemplares')">Cerrar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ============ MODAL LECTOR ============ -->
+    <div class="modal" id="modal-lector" role="dialog" aria-modal="true" aria-labelledby="titulo-modal-lector">
+        <div class="modal-caja">
+            <div class="modal-cabecera">
+                <div class="modal-titulo">
+                    <span class="icono" aria-hidden="true"><span data-icono="lector"></span></span>
+                    <h3 id="titulo-modal-lector">Nuevo lector</h3>
+                </div>
+                <button class="cerrar-modal" type="button" aria-label="Cerrar" onclick="cerrarModal('modal-lector')">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                </button>
+            </div>
+            <form id="form-lector">
+                <div class="modal-cuerpo">
+                    <input type="hidden" id="lector-id">
+                    <div class="fila-campos">
+                        <div class="campo">
+                            <label for="lector-nombre">Nombre *</label>
+                            <input type="text" id="lector-nombre" required autocomplete="off">
+                        </div>
+                        <div class="campo">
+                            <label for="lector-apellido">Apellido</label>
+                            <input type="text" id="lector-apellido" autocomplete="off">
+                        </div>
+                        <div class="campo">
+                            <label for="lector-email">Email *</label>
+                            <input type="email" id="lector-email" required autocomplete="off">
+                        </div>
+                        <div class="campo">
+                            <label for="lector-identificacion">Identificación</label>
+                            <input type="text" id="lector-identificacion" autocomplete="off">
+                        </div>
+                        <div class="campo">
+                            <label for="lector-telefono">Teléfono</label>
+                            <input type="text" id="lector-telefono" autocomplete="off">
+                        </div>
+                        <div class="campo">
+                            <label for="lector-tipo">Tipo de lector</label>
+                            <select id="lector-tipo">
+                                <option value="GENERAL">General</option>
+                                <option value="ESTUDIANTE">Estudiante</option>
+                                <option value="DOCENTE">Docente</option>
+                                <option value="INVESTIGADOR">Investigador</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="fila-campos">
+                        <div class="campo">
+                            <label for="lector-restriccion">Restricción</label>
+                            <input type="text" id="lector-restriccion" placeholder="Motivo de restricción (opcional)" autocomplete="off">
+                        </div>
+                        <div class="campo">
+                            <label for="lector-activo">Estado</label>
+                            <select id="lector-activo">
+                                <option value="true">Activo</option>
+                                <option value="false">Inactivo</option>
+                            </select>
+                        </div>
+                    </div>
+                    <label class="check-linea" style="height:auto;padding:10px 12px;width:100%">
+                        <input type="checkbox" id="lector-acceso">
+                        Permitir acceso al sistema (crear credenciales de inicio de sesión)
+                    </label>
+                    <div class="fila-campos" id="campos-acceso" style="display:none">
+                        <div class="campo">
+                            <label for="lector-username">Usuario</label>
+                            <input type="text" id="lector-username" autocomplete="off">
+                        </div>
+                        <div class="campo">
+                            <label for="lector-password">Contraseña</label>
+                            <input type="password" id="lector-password" placeholder="••••••••" autocomplete="new-password">
+                        </div>
+                    </div>
+                    <p class="nota" id="nota-lector-password"></p>
+                </div>
+                <div class="modal-pie">
+                    <button type="button" class="boton boton-secundario" onclick="cerrarModal('modal-lector')">Cancelar</button>
+                    <button type="submit" class="boton boton-primario">Guardar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- ============ MODAL PRÉSTAMO ============ -->
+    <div class="modal" id="modal-prestamo" role="dialog" aria-modal="true" aria-labelledby="titulo-modal-prestamo">
+        <div class="modal-caja">
+            <div class="modal-cabecera">
+                <div class="modal-titulo">
+                    <span class="icono" aria-hidden="true"><span data-icono="prestamo"></span></span>
+                    <h3 id="titulo-modal-prestamo">Nuevo préstamo</h3>
+                </div>
+                <button class="cerrar-modal" type="button" aria-label="Cerrar" onclick="cerrarModal('modal-prestamo')">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                </button>
+            </div>
+            <form id="form-prestamo">
+                <div class="modal-cuerpo">
+                    <input type="hidden" id="prestamo-id">
+                    <div class="campo">
+                        <label for="prestamo-lector">Lector *</label>
+                        <select id="prestamo-lector" required></select>
+                    </div>
+                    <div class="campo">
+                        <label for="prestamo-libro">Libro *</label>
+                        <select id="prestamo-libro" required></select>
+                    </div>
+                    <div class="fila-campos">
+                        <div class="campo">
+                            <label for="prestamo-fecha">Fecha de préstamo</label>
+                            <input type="date" id="prestamo-fecha">
+                        </div>
+                        <div class="campo">
+                            <label for="prestamo-limite">Fecha límite *</label>
+                            <input type="date" id="prestamo-limite" required>
+                        </div>
+                    </div>
+                    <div class="campo">
+                        <label for="prestamo-observaciones">Observaciones</label>
+                        <textarea id="prestamo-observaciones" rows="2"></textarea>
+                    </div>
+                </div>
+                <div class="modal-pie">
+                    <button type="button" class="boton boton-secundario" onclick="cerrarModal('modal-prestamo')">Cancelar</button>
+                    <button type="submit" class="boton boton-primario">Guardar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- ============ MODAL RESERVA ============ -->
+    <div class="modal" id="modal-reserva" role="dialog" aria-modal="true" aria-labelledby="titulo-modal-reserva">
+        <div class="modal-caja">
+            <div class="modal-cabecera">
+                <div class="modal-titulo">
+                    <span class="icono" aria-hidden="true"><span data-icono="reserva"></span></span>
+                    <h3 id="titulo-modal-reserva">Nueva reserva</h3>
+                </div>
+                <button class="cerrar-modal" type="button" aria-label="Cerrar" onclick="cerrarModal('modal-reserva')">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                </button>
+            </div>
+            <form id="form-reserva">
+                <div class="modal-cuerpo">
+                    <div class="campo" id="campo-reserva-lector">
+                        <label for="reserva-lector">Lector *</label>
+                        <select id="reserva-lector"></select>
+                    </div>
+                    <div class="campo">
+                        <label for="reserva-libro">Libro *</label>
+                        <select id="reserva-libro" required></select>
+                    </div>
+                    <p class="nota">Solo puede reservarse un libro sin ejemplares disponibles. La reserva caduca a los 3 días.</p>
+                </div>
+                <div class="modal-pie">
+                    <button type="button" class="boton boton-secundario" onclick="cerrarModal('modal-reserva')">Cancelar</button>
+                    <button type="submit" class="boton boton-primario">Reservar</button>
+                </div>
+            </form>
+        </div>
     </div>
 
     <!-- ============ MODAL USUARIO ============ -->
@@ -216,21 +738,11 @@
         <div class="modal-caja">
             <div class="modal-cabecera">
                 <div class="modal-titulo">
-                    <span class="icono" aria-hidden="true">
-                        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
-                            <circle cx="9" cy="7" r="4"/>
-                            <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
-                            <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
-                        </svg>
-                    </span>
+                    <span class="icono" aria-hidden="true"><span data-icono="usuario"></span></span>
                     <h3 id="titulo-modal-usuario">Nuevo usuario</h3>
                 </div>
                 <button class="cerrar-modal" type="button" aria-label="Cerrar" onclick="cerrarModal('modal-usuario')">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
-                        <line x1="18" y1="6" x2="6" y2="18"/>
-                        <line x1="6" y1="6" x2="18" y2="18"/>
-                    </svg>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
                 </button>
             </div>
             <form id="form-usuario">
@@ -261,6 +773,7 @@
                             <label for="usuario-rol">Rol</label>
                             <select id="usuario-rol">
                                 <option value="USUARIO">USUARIO</option>
+                                <option value="BIBLIOTECARIO">BIBLIOTECARIO</option>
                                 <option value="ADMIN">ADMIN</option>
                             </select>
                         </div>
@@ -282,121 +795,27 @@
         </div>
     </div>
 
-    <!-- ============ MODAL LIBRO ============ -->
-    <div class="modal" id="modal-libro" role="dialog" aria-modal="true" aria-labelledby="titulo-modal-libro">
+    <!-- ============ MODAL CONFIRMACIÓN ============ -->
+    <div class="modal modal-confirmar" id="modal-confirmar" role="alertdialog" aria-modal="true" aria-labelledby="confirmar-titulo">
         <div class="modal-caja">
             <div class="modal-cabecera">
                 <div class="modal-titulo">
-                    <span class="icono" aria-hidden="true">
-                        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/>
-                            <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/>
-                        </svg>
-                    </span>
-                    <h3 id="titulo-modal-libro">Nuevo libro</h3>
+                    <span class="icono" aria-hidden="true"><span data-icono="alerta"></span></span>
+                    <h3 id="confirmar-titulo">Confirmar acción</h3>
                 </div>
-                <button class="cerrar-modal" type="button" aria-label="Cerrar" onclick="cerrarModal('modal-libro')">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
-                        <line x1="18" y1="6" x2="6" y2="18"/>
-                        <line x1="6" y1="6" x2="18" y2="18"/>
-                    </svg>
-                </button>
             </div>
-            <form id="form-libro">
-                <div class="modal-cuerpo">
-                    <input type="hidden" id="libro-id">
-                    <div class="fila-campos">
-                        <div class="campo">
-                            <label for="libro-titulo">Título *</label>
-                            <input type="text" id="libro-titulo" required autocomplete="off">
-                        </div>
-                        <div class="campo">
-                            <label for="libro-autor">Autor *</label>
-                            <input type="text" id="libro-autor" required autocomplete="off">
-                        </div>
-                        <div class="campo">
-                            <label for="libro-isbn">ISBN</label>
-                            <input type="text" id="libro-isbn" autocomplete="off">
-                        </div>
-                        <div class="campo">
-                            <label for="libro-categoria">Categoría</label>
-                            <input type="text" id="libro-categoria" autocomplete="off">
-                        </div>
-                        <div class="campo">
-                            <label for="libro-anio">Año de publicación</label>
-                            <input type="number" id="libro-anio" min="0" max="2100">
-                        </div>
-                        <div class="campo">
-                            <label for="libro-cantidad">Cantidad *</label>
-                            <input type="number" id="libro-cantidad" min="1" value="1" required>
-                        </div>
+            <div class="modal-cuerpo">
+                <div class="modal-confirmar">
+                    <div class="modal-cuerpo" style="padding:0">
+                        <span class="icono-alerta" aria-hidden="true"><span data-icono="alerta"></span></span>
+                        <p id="confirmar-mensaje"></p>
                     </div>
-                    <p class="nota">Al cambiar la cantidad, los ejemplares disponibles se ajustan automáticamente.</p>
                 </div>
-                <div class="modal-pie">
-                    <button type="button" class="boton boton-secundario" onclick="cerrarModal('modal-libro')">Cancelar</button>
-                    <button type="submit" class="boton boton-primario">Guardar</button>
-                </div>
-            </form>
-        </div>
-    </div>
-
-    <!-- ============ MODAL PRÉSTAMO ============ -->
-    <div class="modal" id="modal-prestamo" role="dialog" aria-modal="true" aria-labelledby="titulo-modal-prestamo">
-        <div class="modal-caja">
-            <div class="modal-cabecera">
-                <div class="modal-titulo">
-                    <span class="icono" aria-hidden="true">
-                        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <polyline points="17 1 21 5 17 9"/>
-                            <path d="M3 11V9a4 4 0 0 1 4-4h14"/>
-                            <polyline points="7 23 3 19 7 15"/>
-                            <path d="M21 13v2a4 4 0 0 1-4 4H3"/>
-                        </svg>
-                    </span>
-                    <h3 id="titulo-modal-prestamo">Nuevo préstamo</h3>
-                </div>
-                <button class="cerrar-modal" type="button" aria-label="Cerrar" onclick="cerrarModal('modal-prestamo')">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
-                        <line x1="18" y1="6" x2="6" y2="18"/>
-                        <line x1="6" y1="6" x2="18" y2="18"/>
-                    </svg>
-                </button>
             </div>
-            <form id="form-prestamo">
-                <div class="modal-cuerpo">
-                    <input type="hidden" id="prestamo-id">
-                    <div class="campo">
-                        <label for="prestamo-usuario">Usuario *</label>
-                        <select id="prestamo-usuario" required></select>
-                    </div>
-                    <div class="campo">
-                        <label for="prestamo-libro">Libro *</label>
-                        <select id="prestamo-libro" required></select>
-                    </div>
-                    <div class="fila-campos">
-                        <div class="campo">
-                            <label for="prestamo-fecha">Fecha de préstamo</label>
-                            <input type="date" id="prestamo-fecha">
-                        </div>
-                        <div class="campo">
-                            <label for="prestamo-limite">Fecha límite *</label>
-                            <input type="date" id="prestamo-limite" required>
-                        </div>
-                    </div>
-                    <div class="campo" id="campo-estado">
-                        <label for="prestamo-estado">Estado</label>
-                        <select id="prestamo-estado">
-                            <option value="PENDIENTE">PENDIENTE</option>
-                            <option value="DEVUELTO">DEVUELTO</option>
-                        </select>
-                    </div>
-                </div>
-                <div class="modal-pie">
-                    <button type="button" class="boton boton-secundario" onclick="cerrarModal('modal-prestamo')">Cancelar</button>
-                    <button type="submit" class="boton boton-primario">Guardar</button>
-                </div>
-            </form>
+            <div class="modal-pie">
+                <button type="button" class="boton boton-secundario" onclick="resolverConfirmacion(false)">Cancelar</button>
+                <button type="button" class="boton boton-primario" id="confirmar-aceptar" onclick="resolverConfirmacion(true)">Confirmar</button>
+            </div>
         </div>
     </div>
 
@@ -404,9 +823,15 @@
 
     <script src="config.js"></script>
     <script src="js/api.js"></script>
+    <script src="js/ui.js"></script>
     <script src="js/panel.js"></script>
-    <script src="js/usuarios.js"></script>
-    <script src="js/libros.js"></script>
+    <script src="js/dashboard.js"></script>
+    <script src="js/catalogo.js"></script>
+    <script src="js/lectores.js"></script>
     <script src="js/prestamos.js"></script>
+    <script src="js/reservas.js"></script>
+    <script src="js/reportes.js"></script>
+    <script src="js/auditoria.js"></script>
+    <script src="js/usuarios.js"></script>
 </body>
 </html>

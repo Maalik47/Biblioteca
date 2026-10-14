@@ -1,92 +1,96 @@
-async function cargarPrestamos() {
-    const tbody = document.getElementById('tabla-prestamos');
-    tbody.innerHTML = filaCarga(8);
-    document.getElementById('vacio-prestamos').style.display = 'none';
-    try {
-        const [resp, usuariosResp, librosResp] = await Promise.all([
-            apiRequest('/prestamos'),
-            apiRequest('/usuarios'),
-            apiRequest('/libros'),
-        ]);
-        llenarSelectores(usuariosResp.data || [], librosResp.data || []);
-        renderPrestamos(resp.data || []);
-    } catch (err) {
-        mostrarToast(err.message, 'error');
-        tbody.innerHTML = '';
-    }
-}
+// ==========================================================================
+// Prestamos: listado paginado, registro, devolucion y renovacion.
+// ==========================================================================
 
-function llenarSelectores(usuarios, libros) {
-    const selUsuario = document.getElementById('prestamo-usuario');
-    selUsuario.innerHTML = '<option value="">-- Seleccionar usuario --</option>';
-    usuarios
-        .filter((u) => u.activo)
-        .forEach((u) => {
-            const op = document.createElement('option');
-            op.value = u.id;
-            op.textContent = u.username + ' (' + u.nombre + ' ' + (u.apellido || '') + ')';
-            selUsuario.appendChild(op);
+let tablaPrestamos = null;
+
+function cargarPrestamos() {
+    if (!tablaPrestamos) {
+        tablaPrestamos = new TablaPaginada({
+            tbody: 'tabla-prestamos',
+            vacio: 'vacio-prestamos',
+            paginacion: 'pag-prestamos',
+            buscador: 'buscar-prestamos',
+            colspan: 9,
+            size: 10,
+            filtros: [{ id: 'filtro-estado-prestamo', param: 'estado' }],
+            cargar: (params) => apiRequest('/prestamos/buscar?' + params.toString()),
+            render: (p) => filaPrestamo(p),
         });
-
-    const selLibro = document.getElementById('prestamo-libro');
-    selLibro.innerHTML = '<option value="">-- Seleccionar libro --</option>';
-    libros.forEach((l) => {
-        const op = document.createElement('option');
-        op.value = l.id;
-        op.textContent = l.titulo + ' (disponibles: ' + l.disponibles + ')';
-        if (l.disponibles <= 0) op.disabled = true;
-        selLibro.appendChild(op);
-    });
+    }
+    tablaPrestamos.cargar(0);
 }
 
-function renderPrestamos(lista) {
-    const tbody = document.getElementById('tabla-prestamos');
-    tbody.innerHTML = '';
-    document.getElementById('vacio-prestamos').style.display = lista.length ? 'none' : 'block';
+function filaPrestamo(p) {
+    const ins = insigniaPrestamo(p);
+    const activo = p.estado !== 'DEVUELTO';
+    const botones = [];
+    if (activo) {
+        botones.push('<button class="boton boton-primario boton-mini" onclick="devolverPrestamo(' + p.id + ')">' + icono('devolver') + '<span>Devolver</span></button>');
+        botones.push('<button class="boton boton-secundario boton-mini" onclick="renovarPrestamo(' + p.id + ')">' + icono('renovar') + '<span>Renovar</span></button>');
+    }
+    botones.push('<button class="boton boton-secundario boton-mini" onclick="editarPrestamo(' + p.id + ')">' + icono('editar') + '<span>Editar</span></button>');
+    botones.push('<button class="boton boton-peligro boton-mini" onclick="eliminarPrestamo(' + p.id + ')">' + icono('eliminar') + '<span>Eliminar</span></button>');
 
-    lista.forEach((p) => {
-        const devuelto = p.estado === 'DEVUELTO';
-        const claseEstado = devuelto ? 'insignia-verde' : 'insignia-ambar';
-        const fila = document.createElement('tr');
-        fila.innerHTML = `
-            <td data-label="ID">${p.id}</td>
-            <td data-label="Usuario"><strong>${p.usuarioNombre}</strong></td>
-            <td data-label="Libro">${p.libroTitulo}</td>
-            <td data-label="Préstamo">${formatearFecha(p.fechaPrestamo)}</td>
-            <td data-label="Límite">${formatearFecha(p.fechaLimite)}</td>
-            <td data-label="Devolución">${p.fechaDevolucion ? formatearFecha(p.fechaDevolucion) : '-'}</td>
-            <td data-label="Estado"><span class="insignia ${claseEstado}">${p.estado}</span></td>
-            <td data-label="Acciones" class="acciones-celda">
-                <div class="acciones">
-                    ${devuelto ? '' : `<button class="boton boton-primario boton-mini" onclick="devolverPrestamo(${p.id})">${icono('devolver')}<span>Devolver</span></button>`}
-                    <button class="boton boton-secundario boton-mini" onclick="editarPrestamo(${p.id})">${icono('editar')}<span>Editar</span></button>
-                    <button class="boton boton-peligro boton-mini" onclick="eliminarPrestamo(${p.id})">${icono('eliminar')}<span>Eliminar</span></button>
-                </div>
-            </td>
-        `;
-        tbody.appendChild(fila);
+    const retraso = p.vencido && p.diasRetraso > 0 ? '<div class="secundario">+' + p.diasRetraso + ' días</div>' : '';
+
+    return (
+        '<td data-label="ID">' + p.id + '</td>' +
+        '<td data-label="Lector"><strong>' + esc(p.usuarioNombre) + '</strong>' + (p.usuarioCodigo ? '<div class="secundario">' + esc(p.usuarioCodigo) + '</div>' : '') + '</td>' +
+        '<td data-label="Libro">' + esc(p.libroTitulo) + '</td>' +
+        '<td data-label="Ejemplar">' + esc(p.ejemplarCodigo || '-') + '</td>' +
+        '<td data-label="Préstamo">' + esc(formatearFecha(p.fechaPrestamo)) + '</td>' +
+        '<td data-label="Límite">' + esc(formatearFecha(p.fechaLimite)) + retraso + '</td>' +
+        '<td data-label="Estado"><span class="insignia ' + ins.clase + '">' + ins.texto + '</span></td>' +
+        '<td data-label="Renov.">' + (p.renovaciones || 0) + '</td>' +
+        '<td data-label="Acciones" class="acciones-celda"><div class="acciones">' + botones.join('') + '</div></td>'
+    );
+}
+
+async function cargarSelectoresPrestamo() {
+    const [lectoresResp, librosResp] = await Promise.all([
+        apiRequest('/lectores?size=200'),
+        apiRequest('/libros'),
+    ]);
+    const lectores = (lectoresResp.data && lectoresResp.data.contenido) || [];
+    const libros = librosResp.data || [];
+
+    llenarSelect('prestamo-lector', lectores, {
+        placeholder: '-- Seleccionar lector --',
+        valor: (l) => l.id,
+        etiqueta: (l) => (l.codigoLector ? l.codigoLector + ' · ' : '') + l.nombre + ' ' + (l.apellido || ''),
+        deshabilitar: (l) => !l.activo,
+    });
+
+    llenarSelect('prestamo-libro', libros, {
+        placeholder: '-- Seleccionar libro --',
+        valor: (l) => l.id,
+        etiqueta: (l) => l.titulo + ' (disponibles: ' + l.disponibles + ')',
+        deshabilitar: (l) => l.disponibles <= 0,
     });
 }
 
 function abrirModalPrestamo(id) {
-    document.getElementById('form-prestamo').reset();
-
+    const form = document.getElementById('form-prestamo');
+    form.reset();
     const hoy = new Date();
     document.getElementById('prestamo-fecha').value = hoy.toISOString().split('T')[0];
     const limite = new Date(hoy);
     limite.setDate(limite.getDate() + 15);
     document.getElementById('prestamo-limite').value = limite.toISOString().split('T')[0];
+    document.getElementById('prestamo-observaciones').value = '';
 
-    document.getElementById('campo-estado').style.display = 'block';
-
-    if (id) {
-        editarPrestamo(id);
-    } else {
-        document.getElementById('prestamo-id').value = '';
-        document.getElementById('prestamo-estado').value = 'PENDIENTE';
-        document.getElementById('titulo-modal-prestamo').textContent = 'Nuevo préstamo';
-        abrirModal('modal-prestamo');
-    }
+    cargarSelectoresPrestamo()
+        .then(() => {
+            document.getElementById('titulo-modal-prestamo').textContent = id ? 'Editar préstamo' : 'Nuevo préstamo';
+            if (id) {
+                editarPrestamo(id);
+            } else {
+                document.getElementById('prestamo-id').value = '';
+                abrirModal('modal-prestamo');
+            }
+        })
+        .catch((err) => mostrarToast(err.message, 'error'));
 }
 
 async function editarPrestamo(id) {
@@ -94,13 +98,12 @@ async function editarPrestamo(id) {
         const resp = await apiRequest('/prestamos/' + id);
         const p = resp.data;
         document.getElementById('prestamo-id').value = p.id;
-        document.getElementById('prestamo-usuario').value = p.usuarioId;
+        document.getElementById('prestamo-lector').value = p.usuarioId;
         document.getElementById('prestamo-libro').value = p.libroId;
-        document.getElementById('prestamo-fecha').value = p.fechaPrestamo;
-        document.getElementById('prestamo-limite').value = p.fechaLimite;
-        document.getElementById('prestamo-estado').value = p.estado;
+        document.getElementById('prestamo-fecha').value = p.fechaPrestamo || '';
+        document.getElementById('prestamo-limite').value = p.fechaLimite || '';
+        document.getElementById('prestamo-observaciones').value = p.observaciones || '';
         document.getElementById('titulo-modal-prestamo').textContent = 'Editar préstamo';
-        document.getElementById('campo-estado').style.display = 'block';
         abrirModal('modal-prestamo');
     } catch (err) {
         mostrarToast(err.message, 'error');
@@ -108,57 +111,90 @@ async function editarPrestamo(id) {
 }
 
 async function eliminarPrestamo(id) {
-    if (!confirm('¿Seguro que deseas eliminar este préstamo?')) return;
+    const ok = await confirmar('¿Eliminar este registro de préstamo?', { titulo: 'Eliminar préstamo', textoBoton: 'Eliminar', peligro: true });
+    if (!ok) return;
     try {
         await apiRequest('/prestamos/' + id, 'DELETE');
         mostrarToast('Préstamo eliminado');
-        cargarPrestamos();
+        tablaPrestamos.cargar(tablaPrestamos.page);
     } catch (err) {
         mostrarToast(err.message, 'error');
     }
 }
 
 async function devolverPrestamo(id) {
+    const ok = await confirmar('¿Registrar la devolución de este préstamo?', { titulo: 'Devolver préstamo', textoBoton: 'Devolver' });
+    if (!ok) return;
     try {
         await apiRequest('/prestamos/' + id + '/devolver', 'PUT');
         mostrarToast('Préstamo devuelto');
-        cargarPrestamos();
+        tablaPrestamos.cargar(tablaPrestamos.page);
     } catch (err) {
         mostrarToast(err.message, 'error');
     }
 }
 
-let formularioPrestamoListo = false;
+async function renovarPrestamo(id) {
+    try {
+        await apiRequest('/prestamos/' + id + '/renovar', 'PUT');
+        mostrarToast('Préstamo renovado');
+        tablaPrestamos.cargar(tablaPrestamos.page);
+    } catch (err) {
+        mostrarToast(err.message, 'error');
+    }
+}
+
+function cargarMisPrestamos() {
+    const tbody = document.getElementById('tabla-misprestamos');
+    tbody.innerHTML = filaCarga(6);
+    apiRequest('/prestamos/mios')
+        .then((resp) => {
+            const lista = resp.data || [];
+            tbody.innerHTML = '';
+            document.getElementById('vacio-misprestamos').style.display = lista.length ? 'none' : 'block';
+            lista.forEach((p) => {
+                const ins = insigniaPrestamo(p);
+                const tr = document.createElement('tr');
+                tr.innerHTML =
+                    '<td data-label="Libro">' + esc(p.libroTitulo) + '</td>' +
+                    '<td data-label="Ejemplar">' + esc(p.ejemplarCodigo || '-') + '</td>' +
+                    '<td data-label="Préstamo">' + esc(formatearFecha(p.fechaPrestamo)) + '</td>' +
+                    '<td data-label="Límite">' + esc(formatearFecha(p.fechaLimite)) + '</td>' +
+                    '<td data-label="Devolución">' + esc(p.fechaDevolucion ? formatearFecha(p.fechaDevolucion) : '-') + '</td>' +
+                    '<td data-label="Estado"><span class="insignia ' + ins.clase + '">' + ins.texto + '</span></td>';
+                tbody.appendChild(tr);
+            });
+        })
+        .catch((err) => {
+            mostrarToast(err.message, 'error');
+            tbody.innerHTML = '';
+        });
+}
 
 document.addEventListener('DOMContentLoaded', () => {
-    if (formularioPrestamoListo) return;
-    formularioPrestamoListo = true;
-
     const form = document.getElementById('form-prestamo');
+    if (!form) return;
     form.addEventListener('submit', async (e) => {
         e.preventDefault();
-
         const id = document.getElementById('prestamo-id').value;
         const data = {
-            usuarioId: parseInt(document.getElementById('prestamo-usuario').value, 10),
-            libroId: parseInt(document.getElementById('prestamo-libro').value, 10),
+            usuarioId: parseInt(document.getElementById('prestamo-lector').value, 10) || null,
+            libroId: parseInt(document.getElementById('prestamo-libro').value, 10) || null,
             fechaPrestamo: document.getElementById('prestamo-fecha').value || null,
             fechaLimite: document.getElementById('prestamo-limite').value || null,
-            estado: id ? document.getElementById('prestamo-estado').value : null,
+            observaciones: document.getElementById('prestamo-observaciones').value.trim(),
         };
-
         if (!data.usuarioId || !data.libroId) {
-            mostrarToast('Debes seleccionar usuario y libro.', 'error');
+            mostrarToast('Debes seleccionar un lector y un libro.', 'error');
             return;
         }
-
         try {
             if (id) {
                 await apiRequest('/prestamos/' + id, 'PUT', data);
                 mostrarToast('Préstamo actualizado');
             } else {
                 await apiRequest('/prestamos', 'POST', data);
-                mostrarToast('Préstamo creado');
+                mostrarToast('Préstamo registrado');
             }
             cerrarModal('modal-prestamo');
             cargarPrestamos();

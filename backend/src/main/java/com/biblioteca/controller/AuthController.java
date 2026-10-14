@@ -3,11 +3,15 @@ package com.biblioteca.controller;
 import com.biblioteca.api.ApiResponse;
 import com.biblioteca.dto.LoginRequest;
 import com.biblioteca.dto.LoginResponse;
+import com.biblioteca.dto.RegistroRequest;
 import com.biblioteca.dto.UsuarioDto;
 import com.biblioteca.entity.Usuario;
 import com.biblioteca.repository.UsuarioRepository;
 import com.biblioteca.security.JwtUtil;
+import com.biblioteca.service.UsuarioService;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -23,23 +27,33 @@ public class AuthController {
     private final UsuarioRepository usuarioRepository;
     private final JwtUtil jwtUtil;
     private final PasswordEncoder passwordEncoder;
+    private final UsuarioService usuarioService;
 
-    public AuthController(UsuarioRepository usuarioRepository, JwtUtil jwtUtil, PasswordEncoder passwordEncoder) {
+    public AuthController(UsuarioRepository usuarioRepository, JwtUtil jwtUtil,
+                          PasswordEncoder passwordEncoder, UsuarioService usuarioService) {
         this.usuarioRepository = usuarioRepository;
         this.jwtUtil = jwtUtil;
         this.passwordEncoder = passwordEncoder;
+        this.usuarioService = usuarioService;
     }
 
     @PostMapping("/login")
     public ResponseEntity<ApiResponse<LoginResponse>> login(@RequestBody LoginRequest request) {
         Usuario usuario = usuarioRepository.findByUsername(request.username())
-                .orElseThrow(() -> new RuntimeException("Credenciales inválidas"));
+                .orElseThrow(() -> new BadCredentialsException("Credenciales inválidas"));
 
         if (!passwordEncoder.matches(request.password(), usuario.getPassword())) {
-            throw new RuntimeException("Credenciales inválidas");
+            throw new BadCredentialsException("Credenciales inválidas");
         }
         if (!Boolean.TRUE.equals(usuario.getActivo())) {
-            throw new RuntimeException("El usuario está inactivo");
+            throw new AccessDeniedException("El usuario está inactivo");
+        }
+        if (!Boolean.TRUE.equals(usuario.getPuedeAcceder())) {
+            throw new AccessDeniedException("Esta cuenta no tiene acceso al panel");
+        }
+        if (usuario.getSuspendidoHasta() != null
+                && usuario.getSuspendidoHasta().isAfter(java.time.LocalDate.now())) {
+            throw new AccessDeniedException("Cuenta suspendida hasta " + usuario.getSuspendidoHasta());
         }
 
         String nombreCompleto = usuario.getNombre()
@@ -53,6 +67,13 @@ public class AuthController {
                 usuario.getRol());
 
         return ResponseEntity.ok(ApiResponse.ok("Bienvenido", response));
+    }
+
+    @PostMapping("/registro")
+    public ResponseEntity<ApiResponse<String>> registro(@RequestBody RegistroRequest request) {
+        UsuarioDto creado = usuarioService.registrarCuenta(request);
+        return ResponseEntity.ok(ApiResponse.ok(
+                "Cuenta creada como usuario. Ahora puedes iniciar sesión.", creado.username()));
     }
 
     @GetMapping("/me")

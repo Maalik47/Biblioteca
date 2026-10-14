@@ -3,6 +3,7 @@ package com.biblioteca.config;
 import com.biblioteca.security.JwtFilter;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -34,7 +35,21 @@ public class SecurityConfig {
                 .cors(Customizer.withDefaults())
                 .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/api/auth/login", "/h2-console/**").permitAll()
+                        .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
+                        .requestMatchers("/api/auth/login", "/api/auth/registro", "/h2-console/**").permitAll()
+                        .requestMatchers("/api/usuarios/**", "/api/auditoria/**").hasRole("ADMIN")
+                        .requestMatchers("/api/lectores/**", "/api/reportes/**")
+                        .hasAnyRole("ADMIN", "BIBLIOTECARIO")
+                        .requestMatchers("/api/prestamos/mios", "/api/reservas/mias").authenticated()
+                        .requestMatchers(HttpMethod.POST, "/api/reservas").authenticated()
+                        .requestMatchers(HttpMethod.POST, "/api/libros/**")
+                        .hasAnyRole("ADMIN", "BIBLIOTECARIO")
+                        .requestMatchers(HttpMethod.PUT, "/api/libros/**")
+                        .hasAnyRole("ADMIN", "BIBLIOTECARIO")
+                        .requestMatchers(HttpMethod.DELETE, "/api/libros/**")
+                        .hasAnyRole("ADMIN", "BIBLIOTECARIO")
+                        .requestMatchers("/api/ejemplares/**", "/api/prestamos/**", "/api/reservas/**")
+                        .hasAnyRole("ADMIN", "BIBLIOTECARIO")
                         .anyRequest().authenticated())
                 .exceptionHandling(ex -> ex
                         .authenticationEntryPoint((request, response, authException) -> {

@@ -1,31 +1,41 @@
 # Gestión de Biblioteca
 
-Sistema web completo para administrar una biblioteca: usuarios, catálogo de
-libros y préstamos, con **login backend Spring Boot + JWT** consumido desde
-**JavaScript puro con `fetch`** (sin frameworks ni librerías de frontend).
+Sistema web completo de gestión bibliotecaria: dashboard, catálogo con
+ejemplares, lectores, préstamos con devolución y renovación, reservas, reportes
+y auditoría, con **backend Spring Boot + JWT** consumido desde **JavaScript
+puro con `fetch`** (sin frameworks ni librerías de frontend).
 
 ## Descripción del proyecto
 
-La aplicación permite a un administrador gestionar el inventario de libros
-(alta, baja y modificación), los usuarios del sistema y los préstamos de
-material, con control de ejemplares disponibles y devoluciones. Los usuarios
-se autentican contra una API REST que emite un token JWT; ese token se guarda
-en `localStorage` y se envía en la cabecera `Authorization: Bearer` en cada
-petición posterior. El frontend es HTML/CSS/JS estático y responsive
-(desktop, tablet y móvil), por lo que puede alojarse en cualquier hosting
-estático.
+La aplicación permite gestionar el inventario de libros y sus **ejemplares**
+(copias físicas), los **lectores**, los préstamos con control de ejemplares
+disponibles, las **reservas** (lista de espera) y los **usuarios del sistema**,
+con **auditoría** de acciones y **reportes**. Los usuarios se autentican contra
+una API REST que emite un token JWT; ese token se guarda en `localStorage` y se
+envía en la cabecera `Authorization: Bearer` en cada petición posterior. El
+frontend es HTML/CSS/JS estático y responsive (desktop, tablet y móvil), por lo
+que puede alojarse en cualquier hosting estático.
 
 **Características principales**
 
 - Autenticación con JWT (login, perfil `/me`, token en `localStorage`)
-- Gestión de libros: catálogo, ejemplares disponibles y búsqueda
-- Gestión de usuarios con roles `ADMIN` y `USUARIO` (baja sin auto-eliminación)
-- Préstamos con estados, fecha límite y devolución (`PUT /{id}/devolver`)
+- **Tres roles** `ADMIN`, `BIBLIOTECARIO` y `USUARIO`; el menú y las secciones
+  se muestran según el rol
+- **Dashboard** con métricas reales (títulos, ejemplares, lectores, préstamos
+  activos, ranking, actividad reciente)
+- Catálogo con **ejemplares** individuales (código, ubicación, estado), búsqueda
+  y filtros paginados
+- Gestión de **lectores** (alta/baja/modificación, código de lector, suspensión)
+  y de **usuarios del sistema** (acceso al panel)
+- Préstamos con estados, fecha límite, **devolución** y **renovación**
+  (`PUT /{id}/devolver`, `PUT /{id}/renovar`), con reglas de negocio
+- **Reservas** con lista de espera y expiración automática
+- **Reportes** (resumen + exportación CSV) y **auditoría** de acciones
 - Respuestas JSON uniformes (`success`, `message`, `data`) y manejo global de
-  errores
+  errores (400/401/403/404/409)
 - API REST desplegable en la nube (Render/Fly/Koyeb con Dockerfile) y base de
   datos H2 local o PostgreSQL en producción
-- Frontend responsive con navegación por secciones y validaciones accesibles
+- Frontend responsive con navegación por secciones y modales accesibles
 
 ## Requisitos previos
 
@@ -69,6 +79,9 @@ vez** (cuando la base está vacía):
 | Usuario | Contraseña | Rol |
 |---------|------------|-----|
 | `admin` | `admin123` | ADMIN |
+
+También se crean **3 lectores de demostración** (rol `USUARIO`, sin acceso al
+panel) con sus préstamos y una reserva, más **4 libros** con sus ejemplares.
 
 Estos valores se pueden cambiar antes de arrancar:
 
@@ -119,24 +132,28 @@ gestion_biblioteca/
 │       └── java/com/biblioteca/
 │           ├── GestionBibliotecaApplication.java
 │           ├── config/        # SecurityConfig, DataInitializer
-│           ├── controller/    # Auth, Libros, Usuarios, Préstamos
-│           ├── service/       # Lógica de negocio
+│           ├── controller/    # Auth, Libros, Ejemplares, Lectores,
+│           │                  #   Prestamos, Reservas, Dashboard,
+│           │                  #   Reportes, Auditoria, Usuarios
+│           ├── service/       # Lógica de negocio (+ MigracionService)
 │           ├── repository/    # Spring Data JPA
-│           ├── entity/        # Usuario, Libro, Prestamo
-│           ├── dto/           # LoginRequest/Response, UsuarioDto, etc.
+│           ├── entity/        # Usuario, Libro, Ejemplar, Prestamo, Reserva, Auditoria
+│           ├── dto/           # Requests, Responses, PaginaResponse, DashboardDto…
 │           ├── security/      # JwtUtil, JwtFilter
-│           ├── exception/     # GlobalExceptionHandler
+│           ├── exception/     # GlobalExceptionHandler + excepciones propias
 │           └── api/           # ApiResponse (envoltorio JSON)
 │
 ├── frontend/
 │   ├── index.html             # Login
-│   ├── panel.html             # Panel de administración
+│   ├── panel.html             # Panel (secciones según rol)
 │   ├── config.js              # URL de la API (editar antes de publicar)
-│   ├── js/                    # api, auth, panel, libros, usuarios, prestamos
+│   ├── js/                    # api, auth, ui, panel, dashboard, catalogo,
+│   │                          #   lectores, prestamos, reservas, reportes,
+│   │                          #   auditoria, usuarios
 │   └── css/estilos.css        # Diseño responsive
 │
 └── bd/
-    ├── schema.sql             # DDL de las 3 tablas
+    ├── schema.sql             # DDL de referencia (6 tablas)
     ├── diagrama-bd.mmd        # Diagrama entidad-relación (Mermaid)
     └── diagrama-flujo-jwt.mmd # Diagrama de secuencia del login
 ```
@@ -153,41 +170,83 @@ Autenticación: `Authorization: Bearer <token>` (excepto el login).
 
 ### Autenticación
 
-| Método | Endpoint | Auth | Descripción |
-|--------|----------|------|-------------|
-| POST | `/api/auth/login` | No | Body `{"username","password"}` → token + datos de usuario |
-| GET | `/api/auth/me` | Sí | Perfil del usuario de la sesión |
+| Método | Endpoint | Roles | Descripción |
+|--------|----------|-------|-------------|
+| POST | `/api/auth/login` | Público | Body `{"username","password"}` → token + datos de usuario |
+| GET | `/api/auth/me` | Cualquiera | Perfil del usuario de la sesión |
 
-### Libros
+### Libros y ejemplares
 
-| Método | Endpoint | Descripción |
-|--------|----------|-------------|
-| GET | `/api/libros` | Listar catálogo |
-| GET | `/api/libros/{id}` | Obtener uno |
-| POST | `/api/libros` | Crear libro |
-| PUT | `/api/libros/{id}` | Actualizar libro |
-| DELETE | `/api/libros/{id}` | Eliminar libro |
+| Método | Endpoint | Roles | Descripción |
+|--------|----------|-------|-------------|
+| GET | `/api/libros` | Cualquiera | Listar catálogo |
+| GET | `/api/libros/buscar` | Cualquiera | Búsqueda paginada (filtros y orden) |
+| GET | `/api/libros/categorias` | Cualquiera | Categorías distintas |
+| GET | `/api/libros/{id}` | Cualquiera | Obtener uno |
+| POST | `/api/libros` | ADMIN, BIBLIOTECARIO | Crear libro (genera ejemplares) |
+| PUT | `/api/libros/{id}` | ADMIN, BIBLIOTECARIO | Actualizar libro |
+| DELETE | `/api/libros/{id}` | ADMIN, BIBLIOTECARIO | Eliminar libro |
+| GET | `/api/libros/{id}/ejemplares` | Cualquiera | Ejemplares del libro |
+| POST | `/api/libros/{id}/ejemplares` | ADMIN, BIBLIOTECARIO | Añadir ejemplar |
+| PUT | `/api/ejemplares/{id}/estado` | ADMIN, BIBLIOTECARIO | Cambiar estado del ejemplar |
+| DELETE | `/api/ejemplares/{id}` | ADMIN, BIBLIOTECARIO | Eliminar ejemplar |
 
-### Usuarios
+### Lectores
 
-| Método | Endpoint | Descripción |
-|--------|----------|-------------|
-| GET | `/api/usuarios` | Listar usuarios |
-| GET | `/api/usuarios/{id}` | Obtener uno |
-| POST | `/api/usuarios` | Crear usuario |
-| PUT | `/api/usuarios/{id}` | Actualizar usuario |
-| DELETE | `/api/usuarios/{id}` | Eliminar (no permite auto-eliminación) |
+| Método | Endpoint | Roles | Descripción |
+|--------|----------|-------|-------------|
+| GET | `/api/lectores` | ADMIN, BIBLIOTECARIO | Listar lectores |
+| GET | `/api/lectores/{id}` | ADMIN, BIBLIOTECARIO | Obtener uno |
+| POST | `/api/lectores` | ADMIN, BIBLIOTECARIO | Crear lector |
+| PUT | `/api/lectores/{id}` | ADMIN, BIBLIOTECARIO | Actualizar lector |
+| DELETE | `/api/lectores/{id}` | ADMIN, BIBLIOTECARIO | Eliminar lector |
 
 ### Préstamos
 
-| Método | Endpoint | Descripción |
-|--------|----------|-------------|
-| GET | `/api/prestamos` | Listar préstamos |
-| GET | `/api/prestamos/{id}` | Obtener uno |
-| POST | `/api/prestamos` | Registrar préstamo |
-| PUT | `/api/prestamos/{id}` | Actualizar préstamo |
-| PUT | `/api/prestamos/{id}/devolver` | Devolver y liberar ejemplares |
-| DELETE | `/api/prestamos/{id}` | Eliminar préstamo |
+| Método | Endpoint | Roles | Descripción |
+|--------|----------|-------|-------------|
+| GET | `/api/prestamos` | ADMIN, BIBLIOTECARIO | Listar préstamos |
+| GET | `/api/prestamos/buscar` | ADMIN, BIBLIOTECARIO | Búsqueda paginada |
+| GET | `/api/prestamos/vencidos` | ADMIN, BIBLIOTECARIO | Préstamos vencidos |
+| GET | `/api/prestamos/mios` | Cualquiera | Préstamos del usuario autenticado |
+| GET | `/api/prestamos/{id}` | ADMIN, BIBLIOTECARIO | Obtener uno |
+| POST | `/api/prestamos` | ADMIN, BIBLIOTECARIO | Registrar préstamo |
+| PUT | `/api/prestamos/{id}` | ADMIN, BIBLIOTECARIO | Actualizar préstamo |
+| PUT | `/api/prestamos/{id}/devolver` | ADMIN, BIBLIOTECARIO | Devolver y liberar el ejemplar |
+| PUT | `/api/prestamos/{id}/renovar` | ADMIN, BIBLIOTECARIO | Renovar (máx. 2, sin lista de espera) |
+| DELETE | `/api/prestamos/{id}` | ADMIN, BIBLIOTECARIO | Eliminar préstamo |
+
+### Reservas
+
+| Método | Endpoint | Roles | Descripción |
+|--------|----------|-------|-------------|
+| GET | `/api/reservas` | ADMIN, BIBLIOTECARIO | Listar reservas |
+| GET | `/api/reservas/mias` | Cualquiera | Reservas del usuario autenticado |
+| POST | `/api/reservas` | Cualquiera | Crear reserva (lista de espera) |
+| PUT | `/api/reservas/{id}/cancelar` | ADMIN, BIBLIOTECARIO | Cancelar reserva |
+| PUT | `/api/reservas/{id}/cumplir` | ADMIN, BIBLIOTECARIO | Marcar como cumplida |
+| DELETE | `/api/reservas/{id}` | ADMIN, BIBLIOTECARIO | Eliminar reserva |
+
+### Dashboard, reportes y auditoría
+
+| Método | Endpoint | Roles | Descripción |
+|--------|----------|-------|-------------|
+| GET | `/api/dashboard` | Cualquiera | Métricas y actividad reciente |
+| GET | `/api/reportes/resumen` | ADMIN, BIBLIOTECARIO | Resumen (activos, devueltos, ranking) |
+| GET | `/api/reportes/libros.csv` | ADMIN, BIBLIOTECARIO | Exportar catálogo a CSV |
+| GET | `/api/reportes/prestamos.csv` | ADMIN, BIBLIOTECARIO | Exportar préstamos a CSV |
+| GET | `/api/auditoria` | ADMIN | Historial de acciones |
+
+### Usuarios del sistema
+
+| Método | Endpoint | Roles | Descripción |
+|--------|----------|-------|-------------|
+| GET | `/api/usuarios` | ADMIN | Listar usuarios con acceso |
+| GET | `/api/usuarios/buscar` | ADMIN | Búsqueda (p. ej. `?soloAcceso=true`) |
+| GET | `/api/usuarios/{id}` | ADMIN | Obtener uno |
+| POST | `/api/usuarios` | ADMIN | Crear usuario |
+| PUT | `/api/usuarios/{id}` | ADMIN | Actualizar usuario |
+| DELETE | `/api/usuarios/{id}` | ADMIN | Eliminar (no permite auto-eliminación) |
 
 Body de préstamo (`PrestamoRequest`):
 
@@ -195,9 +254,10 @@ Body de préstamo (`PrestamoRequest`):
 {
   "usuarioId": 1,
   "libroId": 2,
+  "ejemplarId": 3,
   "fechaPrestamo": "2026-10-06",
-  "fechaLimite": "2026-10-20",
-  "estado": "PENDIENTE"
+  "fechaLimite": "2026-10-21",
+  "observaciones": "Entrega en mostrador"
 }
 ```
 
@@ -216,9 +276,12 @@ Invoke-RestMethod -Uri "http://localhost:8080/api/libros" -Headers $h
 
 | Tabla | Contenido |
 |-------|-----------|
-| `usuarios` | Credenciales (hash BCrypt), nombre, email, rol, estado activo |
+| `usuarios` | Personas de la biblioteca: credenciales (hash BCrypt), rol, estado y datos de lector (código, tipo, acceso, suspensión) |
 | `libros` | Ficha del libro y ejemplares totales/disponibles |
-| `prestamos` | Relación usuario↔libro, fechas, estado y devolución |
+| `ejemplares` | Copias físicas: código único, ubicación y estado |
+| `prestamos` | Relación usuario↔libro con ejemplar, fechas, estado y renovaciones |
+| `reservas` | Lista de espera: usuario↔libro, posición, estado y expiración |
+| `auditoria` | Historial de acciones (quién, qué, sobre qué entidad y cuándo) |
 
 - **Local:** H2 en archivo (`backend/data/biblioteca.mv.db`), consola en
   <http://localhost:8080/h2-console> — URL `jdbc:h2:file:./data/biblioteca`,
@@ -276,6 +339,9 @@ docker run -p 8080:8080 -e JWT_SECRET=... -e APP_ADMIN_USERNAME=admin \
 
 - Contraseñas guardadas con **BCrypt**, nunca en texto plano.
 - Tokens firmados con HMAC desde `JWT_SECRET`; expiran según `JWT_EXPIRATION`.
+- Autorización por rol: `/api/usuarios/**` y `/api/auditoria/**` solo `ADMIN`;
+  escritura de catálogo, lectores, préstamos y reportes para `ADMIN` y
+  `BIBLIOTECARIO`; `USUARIO` accede a su propia información (`/mios`, `/mias`).
 - Todas las rutas exigen token salvo `POST /api/auth/login` (y la consola H2,
   desactivable con `H2_CONSOLE=false` en producción).
 - Sin credenciales por defecto: el primer admin nace de variables de entorno.
@@ -286,10 +352,14 @@ docker run -p 8080:8080 -e JWT_SECRET=... -e APP_ADMIN_USERNAME=admin \
 | Prueba | Resultado |
 |--------|-----------|
 | Login con credenciales válidas | ✅ 200 + token |
-| Login con credenciales inválidas | ✅ 400 `Credenciales inválidas` |
+| Login con credenciales inválidas | ✅ 400/401 |
 | Sin token en `/api/libros` | ✅ 401 `No autorizado` |
 | `/api/auth/me` con token | ✅ Devuelve el perfil y el rol |
-| Frontend login → panel con datos reales | ✅ Libros, usuarios y préstamos cargan |
+| Autorización por rol (USUARIO 403 en admin/auditoría) | ✅ Correcta |
+| Ciclo préstamo → devolución → reserva | ✅ correcto |
+| Renovación con lista de espera | ✅ 409 (regla de negocio) |
+| Dashboard, reportes y auditoría | ✅ Datos reales y CSV |
+| Frontend por rol (ADMIN y USUARIO) | ✅ Menú y secciones filtradas |
 | Responsive 320 / 390 / 768 / 1280 px | ✅ Sin scroll horizontal |
 
 ## Documentación relacionada

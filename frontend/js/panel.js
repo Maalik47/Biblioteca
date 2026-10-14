@@ -1,3 +1,7 @@
+// ==========================================================================
+// Orquestador del panel: sesion, navegacion por rol y carga de secciones.
+// ==========================================================================
+
 document.addEventListener('DOMContentLoaded', () => {
     if (!getToken()) {
         window.location.href = 'index.html';
@@ -12,14 +16,57 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('usuario-inicial').textContent = inicial || '?';
     }
 
-    apiRequest('/auth/me')
-        .then(() => {})
-        .catch(() => {
-            // apiRequest ya redirige si el token caducó (401)
-        });
+    inyectarIconos();
+    configurarSegunRol();
+    wireEventosGlobales();
 
-    const items = document.querySelectorAll('.item-menu');
-    items.forEach((item) => {
+    apiRequest('/auth/me').catch(() => {
+        // apiRequest ya redirige si el token caduco (401)
+    });
+
+    const inicial = esStaff() ? 'dashboard' : 'catalogo';
+    cambiarSeccion(inicial);
+});
+
+function rolActual() {
+    const u = getUsuario();
+    return (u && u.rol) || 'USUARIO';
+}
+
+function esStaff() {
+    const rol = rolActual();
+    return rol === 'ADMIN' || rol === 'BIBLIOTECARIO';
+}
+
+function esAdmin() {
+    return rolActual() === 'ADMIN';
+}
+
+function inyectarIconos() {
+    document.querySelectorAll('[data-icono]').forEach((el) => {
+        const nombre = el.getAttribute('data-icono');
+        const svg = icono(nombre);
+        if (svg) el.innerHTML = svg;
+    });
+    // El titulo de navegacion usa spans con data-icono; los items-meni ya contienen svg.
+    document.querySelectorAll('.item-menu [data-icono]').forEach((el) => {
+        el.setAttribute('aria-hidden', 'true');
+    });
+}
+
+function configurarSegunRol() {
+    const rol = rolActual();
+    document.querySelectorAll('.item-menu').forEach((item) => {
+        const roles = (item.dataset.roles || '').split(',');
+        if (!roles.includes(rol)) item.classList.add('oculto');
+    });
+    if (!esStaff()) {
+        document.querySelectorAll('.solo-staff').forEach((el) => el.classList.add('oculto'));
+    }
+}
+
+function wireEventosGlobales() {
+    document.querySelectorAll('.item-menu').forEach((item) => {
         item.addEventListener('click', () => cambiarSeccion(item.dataset.seccion));
     });
 
@@ -28,11 +75,13 @@ document.addEventListener('DOMContentLoaded', () => {
         window.location.href = 'index.html';
     });
 
-    // Cerrar modal con Escape
     document.addEventListener('keydown', (e) => {
         if (e.key === 'Escape') {
             const abierto = document.querySelector('.modal.abierto');
-            if (abierto) cerrarModal(abierto.id);
+            if (abierto) {
+                if (abierto.id === 'modal-confirmar') resolverConfirmacion(false);
+                else cerrarModal(abierto.id);
+            }
             return;
         }
         if (e.key === 'Tab') {
@@ -53,17 +102,27 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    // Cerrar modal al hacer clic fuera de la caja
     document.querySelectorAll('.modal').forEach((mod) => {
         mod.addEventListener('mousedown', (e) => {
-            if (e.target === mod) cerrarModal(mod.id);
+            if (e.target !== mod) return;
+            if (mod.id === 'modal-confirmar') resolverConfirmacion(false);
+            else cerrarModal(mod.id);
         });
     });
+}
 
-    cambiarSeccion('usuarios');
-});
-
-let focoAnterior = null;
+const CARGADORES = {
+    dashboard: 'cargarDashboard',
+    catalogo: 'cargarLibros',
+    lectores: 'cargarLectores',
+    prestamos: 'cargarPrestamos',
+    reservas: 'cargarReservas',
+    reportes: 'cargarReportes',
+    auditoria: 'cargarAuditoria',
+    usuarios: 'cargarUsuarios',
+    misprestamos: 'cargarMisPrestamos',
+    misreservas: 'cargarMisReservas',
+};
 
 function cambiarSeccion(seccion) {
     document.querySelectorAll('.seccion').forEach((s) => s.classList.remove('activa'));
@@ -73,16 +132,19 @@ function cambiarSeccion(seccion) {
         if (activo) b.setAttribute('aria-current', 'true');
         else b.removeAttribute('aria-current');
     });
-    document.getElementById('seccion-' + seccion).classList.add('activa');
+    const destino = document.getElementById('seccion-' + seccion);
+    if (destino) destino.classList.add('activa');
 
-    if (seccion === 'usuarios' && typeof cargarUsuarios === 'function') cargarUsuarios();
-    if (seccion === 'libros' && typeof cargarLibros === 'function') cargarLibros();
-    if (seccion === 'prestamos' && typeof cargarPrestamos === 'function') cargarPrestamos();
+    const fn = CARGADORES[seccion];
+    if (fn && typeof window[fn] === 'function') window[fn]();
 }
+
+// --- Modales (compartidos por todos los modulos) ---
+let focoAnterior = null;
 
 function abrirModal(id) {
     const modal = document.getElementById(id);
-    if (modal.classList.contains('abierto')) return;
+    if (!modal || modal.classList.contains('abierto')) return;
     if (focoAnterior === null) focoAnterior = document.activeElement;
     modal.classList.add('abierto');
     document.body.classList.add('sin-scroll');
@@ -105,4 +167,11 @@ function formatearFecha(iso) {
     const f = new Date(iso);
     if (isNaN(f.getTime())) return iso;
     return f.toLocaleDateString('es-MX');
+}
+
+function formatearFechaHora(iso) {
+    if (!iso) return '';
+    const f = new Date(iso);
+    if (isNaN(f.getTime())) return iso;
+    return f.toLocaleString('es-MX', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
 }

@@ -4,6 +4,7 @@
 **Proyecto:** `gestion_biblioteca`
 **Backend:** Spring Boot 3 + Spring Security + JWT (jjwt) + Spring Data JPA + H2
 **Frontend:** HTML5 + CSS3 (responsive) + JavaScript (Fetch API)
+**Roles:** `ADMIN`, `BIBLIOTECARIO`, `USUARIO`
 **Ubicación:** `C:\Users\srnar\Desktop\entornos\gestion_biblioteca`
 
 ---
@@ -17,8 +18,10 @@ enunciado de la asignatura:
 > seguridad a través de JWT y consumirlo con JavaScript Genérico usando FETCH u
 > otra tecnología a la aplicada por el profesor (XMLHttpRequest)."
 
-El sistema permite administrar **usuarios, libros y préstamos**, y todas las
-operaciones distintas al login exigen un **token JWT válido**.
+El sistema permite administrar **libros y ejemplares, lectores, préstamos,
+reservas, usuarios del sistema, reportes y auditoría**, con interfaz adaptable
+según el **rol** del usuario. Todas las operaciones distintas al login exigen un
+**token JWT válido**.
 
 ---
 
@@ -49,27 +52,36 @@ gestion_biblioteca/
 ├── backend/                       API REST (Spring Boot)
 │   ├── src/main/java/com/biblioteca/
 │   │   ├── config/                SecurityConfig, DataInitializer
-│   │   ├── controller/            AuthController, UsuarioController,
-│   │   │                           LibroController, PrestamoController
-│   │   ├── dto/                   LoginRequest, LoginResponse, UsuarioDto...
-│   │   ├── entity/                Usuario, Libro, Prestamo (JPA)
-│   │   ├── exception/             GlobalExceptionHandler
+│   │   ├── controller/            Auth, Libros, Ejemplares, Lectores,
+│   │   │                           Prestamos, Reservas, Dashboard,
+│   │   │                           Reportes, Auditoria, Usuarios
+│   │   ├── dto/                   Requests, Responses, PaginaResponse,
+│   │   │                           DashboardDto, EjemplarDto, ReservaDto...
+│   │   ├── entity/                Usuario, Libro, Ejemplar, Prestamo,
+│   │   │                           Reserva, Auditoria (JPA)
+│   │   ├── exception/             GlobalExceptionHandler + excepciones propias
 │   │   ├── repository/            Spring Data JPA (interfaces)
 │   │   ├── security/              JwtUtil, JwtFilter  ← núcleo del JWT
-│   │   └── service/               Lógica de negocio
+│   │   └── service/               Lógica de negocio (+ MigracionService)
 │   ├── src/main/resources/application.properties
 │   └── data/biblioteca.mv.db      Base de datos H2
 ├── frontend/                      Interfaz (HTML + CSS + JS)
 │   ├── index.html                 Login
-│   ├── panel.html                 Panel de administración
+│   ├── panel.html                 Panel (secciones según rol)
 │   ├── css/estilos.css            Design system + responsive
 │   └── js/
-│       ├── api.js                 Cliente HTTP (fetch), token, toasts
+│       ├── api.js                 Cliente HTTP (fetch), token, toasts, iconos
 │       ├── auth.js                Lógica del login
-│       ├── panel.js               Navegación, modales, foco
-│       ├── usuarios.js            CRUD de usuarios
-│       ├── libros.js              CRUD de libros
-│       └── prestamos.js           CRUD y devoluciones
+│       ├── ui.js                  Helpers de UI y tabla paginada reutilizable
+│       ├── panel.js               Roles, navegación, modales, foco
+│       ├── dashboard.js           Métricas y actividad reciente
+│       ├── catalogo.js            Libros y ejemplares
+│       ├── lectores.js            CRUD de lectores
+│       ├── prestamos.js           Préstamos, devolución y renovación
+│       ├── reservas.js            Reservas / lista de espera
+│       ├── reportes.js            Resumen y exportación CSV
+│       ├── auditoria.js           Historial de acciones
+│       └── usuarios.js            Usuarios del sistema
 ├── bd/
 │   ├── schema.sql                 Código SQL que crea el diagrama de la BD
 │   ├── diagrama-bd.mmd            Diagrama entidad-relación (Mermaid)
@@ -83,7 +95,7 @@ Flujo de una request protegida:
 ```
 Navegador (fetch + Authorization: Bearer) 
    → JwtFilter (verifica firma y expiración) 
-   → SecurityContext (Authentication con ROLE_ADMIN/USUARIO) 
+   → SecurityContext (Authentication con ROLE_ADMIN / ROLE_BIBLIOTECARIO / ROLE_USUARIO) 
    → Controller 
    → Service 
    → Repository 
@@ -98,8 +110,12 @@ Navegador (fetch + Authorization: Bearer)
 
 ```mermaid
 erDiagram
-    USUARIOS ||--o{ PRESTAMOS : "genera"
-    LIBROS   ||--o{ PRESTAMOS : "se presta en"
+    USUARIOS  ||--o{ PRESTAMOS  : "genera"
+    USUARIOS  ||--o{ RESERVAS   : "solicita"
+    LIBROS    ||--o{ PRESTAMOS  : "se presta en"
+    LIBROS    ||--o{ EJEMPLARES : "tiene copias"
+    LIBROS    ||--o{ RESERVAS   : "en espera"
+    EJEMPLARES ||--o{ PRESTAMOS : "se presta (ejemplar)"
 
     USUARIOS {
         BIGINT       id PK "autoincremental"
@@ -108,9 +124,13 @@ erDiagram
         VARCHAR(100) nombre
         VARCHAR(100) apellido
         VARCHAR(120) email
-        VARCHAR(20)  rol "ADMIN | USUARIO"
+        VARCHAR(20)  rol "ADMIN | BIBLIOTECARIO | USUARIO"
         BOOLEAN      activo
         TIMESTAMP    fecha_registro
+        VARCHAR(30)  codigo_lector UK "codigo de lector"
+        VARCHAR(20)  tipo_lector "GENERAL | ESTUDIANTE | DOCENTE | EXTERNO"
+        BOOLEAN      puede_acceder "acceso al panel"
+        DATE         suspendido_hasta
     }
 
     LIBROS {
@@ -120,19 +140,54 @@ erDiagram
         VARCHAR(30)  isbn UK
         VARCHAR(80)  categoria
         INTEGER      anio_publicacion
+        VARCHAR(150) editorial
+        VARCHAR(1200) descripcion
+        VARCHAR(120) ubicacion
         INTEGER      cantidad "total de ejemplares"
         INTEGER      disponibles "ejemplares libres"
+        VARCHAR(20)  estado "ACTIVO | INACTIVO"
         TIMESTAMP    fecha_registro
+    }
+
+    EJEMPLARES {
+        BIGINT      id PK "autoincremental"
+        BIGINT      libro_id FK "-> libros.id"
+        VARCHAR(40) codigo UK "codigo unico"
+        VARCHAR(120) ubicacion
+        VARCHAR(20) estado "DISPONIBLE|PRESTADO|RESERVADO|MANTENIMIENTO|PERDIDO|BAJA"
+        TIMESTAMP   fecha_alta
     }
 
     PRESTAMOS {
         BIGINT   id PK "autoincremental"
         BIGINT   usuario_id FK "-> usuarios.id"
         BIGINT   libro_id FK "-> libros.id"
+        BIGINT   ejemplar_id FK "-> ejemplares.id"
         DATE     fecha_prestamo
         DATE     fecha_limite
         DATE     fecha_devolucion "NULL si sigue prestado"
         VARCHAR(20) estado "PENDIENTE | DEVUELTO"
+        INTEGER  renovaciones
+    }
+
+    RESERVAS {
+        BIGINT      id PK "autoincremental"
+        BIGINT      usuario_id FK "-> usuarios.id"
+        BIGINT      libro_id FK "-> libros.id"
+        TIMESTAMP   fecha_solicitud
+        DATE        fecha_expiracion
+        VARCHAR(20) estado "PENDIENTE|DISPONIBLE|CUMPLIDA|CANCELADA|EXPIRADA"
+        INTEGER     posicion "lugar en la cola"
+    }
+
+    AUDITORIA {
+        BIGINT        id PK "autoincremental"
+        VARCHAR(50)   usuario "quien ejecuto la accion"
+        VARCHAR(30)   accion "LOGIN | PRESTAMO | DEVOLUCION..."
+        VARCHAR(40)   entidad
+        BIGINT        entidad_id
+        VARCHAR(1000) detalle
+        TIMESTAMP     fecha
     }
 ```
 
@@ -144,17 +199,23 @@ El diagrama también está disponible como archivo de código en
 
 | Tabla | Descripción | Campos principales |
 |-------|-------------|--------------------|
-| `usuarios` | Cuentas del sistema. `password` almacena el **hash BCrypt**, nunca el texto plano. | `id` (PK), `username` (único), `password`, `nombre`, `apellido`, `email`, `rol`, `activo`, `fecha_registro` |
-| `libros` | Catálogo de la biblioteca. `cantidad` es el total de ejemplares y `disponibles` los libres. | `id` (PK), `titulo`, `autor`, `isbn` (único), `categoria`, `anio_publicacion`, `cantidad`, `disponibles`, `fecha_registro` |
-| `prestamos` | Tabla puente que relaciona usuarios y libros (relación N:M). | `id` (PK), `usuario_id` (FK→usuarios), `libro_id` (FK→libros), `fecha_prestamo`, `fecha_limite`, `fecha_devolucion`, `estado` |
+| `usuarios` | Personas de la biblioteca. `password` almacena el **hash BCrypt**. Una misma persona puede ser lector (sin acceso) o tener credenciales (`puede_acceder`). | `id` (PK), `username` (único), `password`, `nombre`, `apellido`, `email`, `rol`, `activo`, `fecha_registro`, `codigo_lector`, `tipo_lector`, `puede_acceder`, `suspendido_hasta` |
+| `libros` | Catálogo. `cantidad` es el total de ejemplares y `disponibles` los libres (se sincroniza con `ejemplares`). | `id` (PK), `titulo`, `autor`, `isbn` (único), `categoria`, `anio_publicacion`, `editorial`, `descripcion`, `ubicacion`, `cantidad`, `disponibles`, `estado`, `fecha_registro` |
+| `ejemplares` | Copias físicas de cada libro, con código único. | `id` (PK), `libro_id` (FK→libros), `codigo` (único), `ubicacion`, `estado`, `fecha_alta` |
+| `prestamos` | Tabla puente que relaciona usuarios y libros (relación N:M) sobre un ejemplar concreto. | `id` (PK), `usuario_id` (FK→usuarios), `libro_id` (FK→libros), `ejemplar_id` (FK→ejemplares), `fecha_prestamo`, `fecha_limite`, `fecha_devolucion`, `estado`, `renovaciones` |
+| `reservas` | Lista de espera de un libro sin ejemplares disponibles. | `id` (PK), `usuario_id` (FK), `libro_id` (FK), `fecha_solicitud`, `fecha_expiracion`, `estado`, `posicion` |
+| `auditoria` | Registro de acciones (quién, qué, sobre qué entidad y cuándo). | `id` (PK), `usuario`, `accion`, `entidad`, `entidad_id`, `detalle`, `fecha` |
 
-**Relaciones:** un usuario puede tener muchos préstamos (1:N) y un libro puede
-estar en muchos préstamos (1:N). La relación entre `usuarios` y `libros` es
-muchos-a-muchos y se modela mediante la tabla intermedia `prestamos`.
+**Relaciones:** un usuario puede tener muchos préstamos y reservas (1:N); un
+libro puede tener muchos ejemplares, préstamos y reservas (1:N); cada préstamo
+apunta a un ejemplar físico. La relación entre `usuarios` y `libros` es
+muchos-a-muchos y se modela mediante `prestamos` (y `reservas` para la lista de
+espera).
 
 **Restricciones de integridad:** claves primarias identity, unicidad de
-`username` e `isbn`, claves foráneas con integridad referencial, y
-`CHECK (disponibles <= cantidad)` para impedir inventarios imposibles.
+`username`, `isbn` y `codigo` de ejemplar, claves foráneas con integridad
+referencial, y `CHECK (disponibles <= cantidad)` para impedir inventarios
+imposibles. Además, `CHECK` sobre los valores válidos de los estados.
 
 **Código para crear la base de datos:** el archivo [`bd/schema.sql`](bd/schema.sql)
 contiene los `CREATE TABLE`, índices y las constantes de `CHECK`, compatible con
@@ -200,7 +261,7 @@ sequenceDiagram
 |------------|---------|-----------------|
 | Generación del token | `security/JwtUtil.java` | Construye el JWT con `jjwt`: `subject`=username, claims `rol` y `nombre`, `issuedAt`, `expiration` (24 h) y firma HMAC con la clave secreta. |
 | Validación del token | `security/JwtFilter.java` | Filtro `OncePerRequestFilter`: lee la cabecera `Authorization: Bearer <token>`, verifica firma/expiración, busca el usuario y crea el `Authentication` con su rol. |
-| Configuración de seguridad | `config/SecurityConfig.java` | Sesiones `STATELESS` (sin sesiones HTTP), CSRF deshabilitado, CORS abierto para el frontend, `BCryptPasswordEncoder`, solo `/api/auth/login` y `/h2-console` son públicos, respuestas 401/403 en JSON. |
+| Configuración de seguridad | `config/SecurityConfig.java` | Sesiones `STATELESS` (sin sesiones HTTP), CSRF deshabilitado, CORS abierto para el frontend, `BCryptPasswordEncoder`, **autorización por rol**, solo `/api/auth/login` y `/h2-console` son públicos, respuestas 401/403 en JSON. |
 
 ### 5.3 Código clave
 
@@ -268,6 +329,10 @@ async function apiRequest(path, method = 'GET', body = null) {
 5. **Mensaje genérico "Credenciales inválidas"**: no se revela si el usuario existe o no.
 6. **Validación de usuario inactivo**: una cuenta desactivada no puede iniciar sesión.
 7. **Reinicio automático de sesión** en el frontend ante cualquier respuesta 401.
+8. **Autorización por rol**: `/api/usuarios/**` y `/api/auditoria/**` requieren
+   `ADMIN`; escritura de catálogo, lectores, préstamos y reportes requieren
+   `ADMIN` o `BIBLIOTECARIO`; el rol `USUARIO` solo accede a su propia
+   información (`/api/prestamos/mios`, `/api/reservas/mias`) y a crear reservas.
 
 ---
 
@@ -319,18 +384,24 @@ Características de la interfaz:
 |--------|------|-------------|--------|
 | POST | `/api/auth/login` | Autentica al usuario y devuelve el token JWT | Público |
 | GET | `/api/auth/me` | Datos del usuario autenticado | JWT |
-| GET | `/api/usuarios` | Lista usuarios | JWT |
-| POST | `/api/usuarios` | Crea usuario | JWT |
-| PUT | `/api/usuarios/{id}` | Actualiza usuario | JWT |
-| DELETE | `/api/usuarios/{id}` | Elimina usuario | JWT |
-| GET | `/api/libros` | Lista libros | JWT |
-| POST | `/api/libros` | Crea libro | JWT |
-| PUT | `/api/libros/{id}` | Actualiza libro | JWT |
-| DELETE | `/api/libros/{id}` | Elimina libro | JWT |
-| GET | `/api/prestamos` | Lista préstamos | JWT |
-| POST | `/api/prestamos` | Registra préstamo (descuenta un ejemplar) | JWT |
-| PUT | `/api/prestamos/{id}` | Actualiza/devuelve préstamo | JWT |
-| DELETE | `/api/prestamos/{id}` | Elimina préstamo | JWT |
+| GET | `/api/usuarios` · `/buscar` · `/{id}` | Lista / busca / obtiene usuarios del sistema | ADMIN |
+| POST/PUT/DELETE | `/api/usuarios…` | Crea, actualiza y elimina usuarios | ADMIN |
+| GET | `/api/lectores` · `/{id}` | Lista y obtiene lectores | ADMIN, BIBLIOTECARIO |
+| POST/PUT/DELETE | `/api/lectores…` | Crea, actualiza y elimina lectores | ADMIN, BIBLIOTECARIO |
+| GET | `/api/libros` · `/buscar` · `/categorias` · `/{id}` | Catálogo, búsqueda paginada y categorías | JWT |
+| POST/PUT/DELETE | `/api/libros…` | Crea, actualiza y elimina libros | ADMIN, BIBLIOTECARIO |
+| GET/POST | `/api/libros/{id}/ejemplares` | Lista y añade ejemplares | JWT / ADMIN, BIBLIOTECARIO |
+| PUT/DELETE | `/api/ejemplares…` | Cambia estado y elimina ejemplares | ADMIN, BIBLIOTECARIO |
+| GET | `/api/prestamos` · `/buscar` · `/vencidos` | Lista, busca y vencidos | ADMIN, BIBLIOTECARIO |
+| GET | `/api/prestamos/mios` | Préstamos del usuario autenticado | JWT |
+| POST | `/api/prestamos` | Registra préstamo (descuenta un ejemplar) | ADMIN, BIBLIOTECARIO |
+| PUT | `/api/prestamos/{id}/devolver` | Devuelve y libera el ejemplar | ADMIN, BIBLIOTECARIO |
+| PUT | `/api/prestamos/{id}/renovar` | Renueva (máx. 2, sin lista de espera) | ADMIN, BIBLIOTECARIO |
+| GET/POST | `/api/reservas` · `/api/reservas/mias` | Lista reservas / reservas propias | ADMIN, BIBLIOTECARIO / JWT |
+| PUT | `/api/reservas/{id}/cancelar` · `/cumplir` | Cancela o cumple una reserva | ADMIN, BIBLIOTECARIO |
+| GET | `/api/dashboard` | Métricas y actividad reciente | JWT |
+| GET | `/api/reportes/resumen` · `/libros.csv` · `/prestamos.csv` | Resumen y exportación CSV | ADMIN, BIBLIOTECARIO |
+| GET | `/api/auditoria` | Historial de acciones | ADMIN |
 
 Formato uniforme de respuesta (`api/ApiResponse.java`):
 
@@ -342,10 +413,11 @@ Formato uniforme de respuesta (`api/ApiResponse.java`):
 
 ## 8. Cómo se desarrolló la solución (proceso)
 
-1. **Definición del modelo de datos.** Se identificaron las tres entidades del
-   dominio (Usuario, Libro, Préstamo) y sus relaciones. El préstamo se modeló
-   como tabla puente N:M entre usuarios y libros, con control de exemplares
-   mediante `cantidad` y `disponibles`.
+1. **Definición del modelo de datos.** Se identificaron las entidades del
+   dominio (Usuario, Libro, Ejemplar, Préstamo, Reserva, Auditoría) y sus
+   relaciones. El préstamo se modeló como tabla puente N:M entre usuarios y
+   libros, ahora apuntando a un **ejemplar** concreto; la disponibilidad se
+   sincroniza entre `libros.disponibles` y el estado de cada ejemplar.
 2. **Diseño del esquema.** Se escribió el DDL en `bd/schema.sql` con claves
    primarias identity, claves foráneas, índices y restricciones `CHECK`.
    El diagrama entidad-relación se documentó en Mermaid para su renderizado.
@@ -358,9 +430,12 @@ Formato uniforme de respuesta (`api/ApiResponse.java`):
    tokens con jjwt) y `JwtFilter` (extracción del token de la cabecera
    `Authorization` y construcción del contexto de seguridad). Solo el login
    quedó como ruta pública.
-5. **Datos iniciales.** `DataInitializer` crea, si la tabla está vacía, tres
-   usuarios de prueba (`admin/admin123`, `jperez/123456`, `mgomez/123456`) y
-   cuatro libros de ejemplo.
+5. **Datos iniciales.** `DataInitializer` crea, si la base está vacía, el
+   usuario administrador (valores de `app.admin.*`, `admin/admin123` en local),
+   tres lectores de ejemplo **sin acceso al panel** (`puede_acceder = false`) y
+   cuatro libros con sus ejemplares generados automáticamente. Un
+   `MigracionService` normaliza bases existentes (rellena campos nuevos, genera
+   ejemplares y recalcula disponibles) para poder actualizar sin perder datos.
 6. **Construcción del frontend.** Se desarrolló el login y el panel de
    administración con JavaScript puro. Se centralizó toda la comunicación HTTP en
    `apiRequest()` (fetch), que adjunta el token y gestiona el 401.
@@ -378,11 +453,15 @@ Formato uniforme de respuesta (`api/ApiResponse.java`):
 | Prueba | Resultado |
 |--------|-----------|
 | Login con credenciales válidas (`admin/admin123`) | ✅ Devuelve token y redirige al panel |
-| Login con credenciales inválidas | ✅ Muestra "Credenciales inválidas" (HTTP 400) |
+| Login con credenciales inválidas | ✅ HTTP 400/401 con mensaje genérico |
 | Acceso a `/api/usuarios` sin token | ✅ HTTP 401 (token expirado → regreso al login) |
-| Acceso a `/api/usuarios` con token | ✅ HTTP 200 con datos |
-| CRUD de usuarios, libros y préstamos | ✅ Correcto, con toasts de confirmación |
-| Devolución de préstamo | ✅ Actualiza el estado y devuelve el ejemplar |
+| Autorización por rol (`USUARIO` en `/api/usuarios` y `/api/auditoria`) | ✅ HTTP 403 |
+| CRUD de libros, ejemplares, lectores y usuarios | ✅ Correcto, con toasts de confirmación |
+| Préstamo con ejemplar → devolución | ✅ Libera el ejemplar y sincroniza disponibles |
+| Renovación con lista de espera activa | ✅ HTTP 409 (regla de negocio) |
+| Reserva → disponible con expiración | ✅ Correcto |
+| Dashboard, reportes (resumen + CSV) y auditoría | ✅ Datos reales |
+| Vista por rol (menú y secciones filtradas) | ✅ ADMIN y USUARIO |
 | Layout responsive 1280 / 768 / 390 / 320 px | ✅ Sin desbordes horizontales |
 
 ---
@@ -422,8 +501,11 @@ npx http-server frontend -p 5500 -c-1
 | Usuario | Contraseña | Rol |
 |---------|-----------|-----|
 | `admin` | `admin123` | ADMIN |
-| `jperez` | `123456` | USUARIO |
-| `mgomez` | `123456` | USUARIO |
+
+Los **3 lectores de ejemplo** (Ana Torres, Luis Ramírez, Carmen Díaz) se crean
+sin acceso al panel, por lo que no son credenciales de login; sirven como datos
+para préstamos y reservas. En producción el administrador se crea con
+`APP_ADMIN_USERNAME` / `APP_ADMIN_PASSWORD`.
 
 ### Consola de base de datos
 

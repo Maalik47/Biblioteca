@@ -3,8 +3,12 @@
 %% Equivalente al DDL de bd/schema.sql
 
 erDiagram
-    USUARIOS ||--o{ PRESTAMOS : "genera"
-    LIBROS   ||--o{ PRESTAMOS : "se presta en"
+    USUARIOS  ||--o{ PRESTAMOS  : "genera"
+    USUARIOS  ||--o{ RESERVAS   : "solicita"
+    LIBROS    ||--o{ PRESTAMOS  : "se presta en"
+    LIBROS    ||--o{ EJEMPLARES : "tiene copias"
+    LIBROS    ||--o{ RESERVAS   : "en espera"
+    EJEMPLARES ||--o{ PRESTAMOS : "se presta (ejemplar)"
 
     USUARIOS {
         BIGINT       id PK "autoincremental"
@@ -13,29 +17,73 @@ erDiagram
         VARCHAR(100) nombre "obligatorio"
         VARCHAR(100) apellido "opcional"
         VARCHAR(120) email "obligatorio"
-        VARCHAR(20)  rol "ADMIN | USUARIO"
+        VARCHAR(20)  rol "ADMIN | BIBLIOTECARIO | USUARIO"
         BOOLEAN      activo "true = habilitado"
         TIMESTAMP    fecha_registro "fecha de alta"
+        VARCHAR(30)  codigo_lector UK
+        VARCHAR(40)  identificacion
+        VARCHAR(30)  telefono
+        VARCHAR(20)  tipo_lector "GENERAL | ESTUDIANTE | DOCENTE | EXTERNO"
+        BOOLEAN      puede_acceder "acceso al panel"
+        VARCHAR(255) restriccion
+        DATE         suspendido_hasta
     }
 
     LIBROS {
+        BIGINT        id PK "autoincremental"
+        VARCHAR(200)  titulo "obligatorio"
+        VARCHAR(150)  autor "obligatorio"
+        VARCHAR(30)   isbn UK "unico, opcional"
+        VARCHAR(80)   categoria "opcional"
+        INTEGER       anio_publicacion "opcional"
+        VARCHAR(150)  editorial
+        VARCHAR(1200) descripcion
+        VARCHAR(120)  ubicacion
+        VARCHAR(500)  portada_url
+        INTEGER       cantidad "total de ejemplares"
+        INTEGER       disponibles "ejemplares libres"
+        VARCHAR(20)   estado "ACTIVO | INACTIVO"
+        TIMESTAMP     fecha_registro "fecha de alta"
+    }
+
+    EJEMPLARES {
         BIGINT       id PK "autoincremental"
-        VARCHAR(200) titulo "obligatorio"
-        VARCHAR(150) autor "obligatorio"
-        VARCHAR(30)  isbn UK "unico, opcional"
-        VARCHAR(80)  categoria "opcional"
-        INTEGER      anio_publicacion "opcional"
-        INTEGER      cantidad "total de ejemplares"
-        INTEGER      disponibles "ejemplares libres"
-        TIMESTAMP    fecha_registro "fecha de alta"
+        BIGINT       libro_id FK "-> libros.id"
+        VARCHAR(40)  codigo UK "codigo unico"
+        VARCHAR(120) ubicacion
+        VARCHAR(20)  estado "DISPONIBLE|PRESTADO|RESERVADO|MANTENIMIENTO|PERDIDO|BAJA"
+        TIMESTAMP    fecha_alta
     }
 
     PRESTAMOS {
-        BIGINT   id PK "autoincremental"
-        BIGINT   usuario_id FK "-> usuarios.id"
-        BIGINT   libro_id FK "-> libros.id"
-        DATE     fecha_prestamo "obligatorio"
-        DATE     fecha_limite "obligatorio"
-        DATE     fecha_devolucion "NULL si no se devolvio"
+        BIGINT      id PK "autoincremental"
+        BIGINT      usuario_id FK "-> usuarios.id"
+        BIGINT      libro_id FK "-> libros.id"
+        BIGINT      ejemplar_id FK "-> ejemplares.id"
+        DATE        fecha_prestamo "obligatorio"
+        DATE        fecha_limite "obligatorio"
+        DATE        fecha_devolucion "NULL si no se devolvio"
         VARCHAR(20) estado "PENDIENTE | DEVUELTO"
+        INTEGER     renovaciones
+        VARCHAR(300) observaciones
+    }
+
+    RESERVAS {
+        BIGINT      id PK "autoincremental"
+        BIGINT      usuario_id FK "-> usuarios.id"
+        BIGINT      libro_id FK "-> libros.id"
+        TIMESTAMP   fecha_solicitud
+        DATE        fecha_expiracion
+        VARCHAR(20) estado "PENDIENTE|DISPONIBLE|CUMPLIDA|CANCELADA|EXPIRADA"
+        INTEGER     posicion "lugar en la cola"
+    }
+
+    AUDITORIA {
+        BIGINT        id PK "autoincremental"
+        VARCHAR(50)   usuario "quien ejecuto la accion"
+        VARCHAR(30)   accion "LOGIN | PRESTAMO | DEVOLUCION..."
+        VARCHAR(40)   entidad
+        BIGINT        entidad_id
+        VARCHAR(1000) detalle
+        TIMESTAMP     fecha
     }

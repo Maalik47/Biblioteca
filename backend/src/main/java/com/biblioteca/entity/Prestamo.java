@@ -27,6 +27,11 @@ public class Prestamo {
     @JoinColumn(name = "libro_id", nullable = false)
     private Libro libro;
 
+    /** Ejemplar fisico prestado (aditivo; puede ser null en prestamos antiguos). */
+    @ManyToOne
+    @JoinColumn(name = "ejemplar_id")
+    private Ejemplar ejemplar;
+
     @Column(name = "fecha_prestamo", nullable = false)
     private LocalDate fechaPrestamo = LocalDate.now();
 
@@ -38,6 +43,12 @@ public class Prestamo {
 
     @Column(nullable = false)
     private String estado = "PENDIENTE";
+
+    /** Numero de renovaciones acumuladas (nullable por compatibilidad de migracion). */
+    private Integer renovaciones = 0;
+
+    @Column(length = 300)
+    private String observaciones;
 
     public Long getId() {
         return id;
@@ -61,6 +72,30 @@ public class Prestamo {
 
     public void setLibro(Libro libro) {
         this.libro = libro;
+    }
+
+    public Ejemplar getEjemplar() {
+        return ejemplar;
+    }
+
+    public void setEjemplar(Ejemplar ejemplar) {
+        this.ejemplar = ejemplar;
+    }
+
+    public Integer getRenovaciones() {
+        return renovaciones;
+    }
+
+    public void setRenovaciones(Integer renovaciones) {
+        this.renovaciones = renovaciones;
+    }
+
+    public String getObservaciones() {
+        return observaciones;
+    }
+
+    public void setObservaciones(String observaciones) {
+        this.observaciones = observaciones;
     }
 
     public LocalDate getFechaPrestamo() {

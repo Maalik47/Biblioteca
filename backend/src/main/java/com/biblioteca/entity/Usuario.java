@@ -7,6 +7,7 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 @Entity
@@ -38,6 +39,30 @@ public class Usuario {
 
     @Column(name = "fecha_registro")
     private LocalDateTime fechaRegistro = LocalDateTime.now();
+
+    // ------------------------------------------------------------------
+    // Datos de lector (aditivos). Una persona puede ser lector y, ademas,
+    // tener credenciales para entrar al panel (rol + puedeAcceder).
+    // ------------------------------------------------------------------
+
+    @Column(name = "codigo_lector", unique = true)
+    private String codigoLector;
+
+    private String identificacion;
+
+    private String telefono;
+
+    @Column(name = "tipo_lector")
+    private String tipoLector = "GENERAL";
+
+    @Column(name = "puede_acceder")
+    private Boolean puedeAcceder = true;
+
+    /** Motivo de restriccion/suspension (null si no tiene). */
+    private String restriccion;
+
+    @Column(name = "suspendido_hasta")
+    private LocalDate suspendidoHasta;
 
     public Long getId() {
         return id;
@@ -109,5 +134,61 @@ public class Usuario {
 
     public void setFechaRegistro(LocalDateTime fechaRegistro) {
         this.fechaRegistro = fechaRegistro;
+    }
+
+    public String getCodigoLector() {
+        return codigoLector;
+    }
+
+    public void setCodigoLector(String codigoLector) {
+        this.codigoLector = codigoLector;
+    }
+
+    public String getIdentificacion() {
+        return identificacion;
+    }
+
+    public void setIdentificacion(String identificacion) {
+        this.identificacion = identificacion;
+    }
+
+    public String getTelefono() {
+        return telefono;
+    }
+
+    public void setTelefono(String telefono) {
+        this.telefono = telefono;
+    }
+
+    public String getTipoLector() {
+        return tipoLector;
+    }
+
+    public void setTipoLector(String tipoLector) {
+        this.tipoLector = tipoLector;
+    }
+
+    public Boolean getPuedeAcceder() {
+        return puedeAcceder;
+    }
+
+    public void setPuedeAcceder(Boolean puedeAcceder) {
+        this.puedeAcceder = puedeAcceder;
+    }
+
+    public String getRestriccion() {
+        return restriccion;
+    }
+
+    public void setRestriccion(String restriccion) {
+        this.restriccion = restriccion;
+    }
+
+    public LocalDate getSuspendidoHasta() {
+        return suspendidoHasta;
+    }
+
+    public void setSuspendidoHasta(LocalDate suspendidoHasta) {
+        this.suspendidoHasta = suspendidoHasta;
     }
 }

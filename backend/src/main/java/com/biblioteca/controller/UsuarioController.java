@@ -1,6 +1,7 @@
 package com.biblioteca.controller;
 
 import com.biblioteca.api.ApiResponse;
+import com.biblioteca.dto.PaginaResponse;
 import com.biblioteca.dto.UsuarioDto;
 import com.biblioteca.entity.Usuario;
 import com.biblioteca.service.UsuarioService;
@@ -13,6 +14,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
@@ -30,6 +32,17 @@ public class UsuarioController {
     @GetMapping
     public ResponseEntity<ApiResponse<List<UsuarioDto>>> listar() {
         return ResponseEntity.ok(ApiResponse.ok(usuarioService.listar()));
+    }
+
+    @GetMapping("/buscar")
+    public ResponseEntity<ApiResponse<PaginaResponse<UsuarioDto>>> buscar(
+            @RequestParam(required = false) String q,
+            @RequestParam(required = false) String rol,
+            @RequestParam(required = false) boolean soloAcceso,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
+        return ResponseEntity.ok(ApiResponse.ok(
+                usuarioService.buscar(q, rol, null, soloAcceso ? Boolean.TRUE : null, page, size)));
     }
 
     @GetMapping("/{id}")
